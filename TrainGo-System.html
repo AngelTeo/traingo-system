@@ -1,0 +1,2407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TrainGo Training System</title>
+<style>
+:root {
+  --acc:#185FA5;--grn:#0F6E56;--red:#A32D2D;--amb:#854F0B;--pur:#6B3FA0;
+  --sur:#ffffff;--sur2:#f5f4f0;--bdr:#e0ddd6;
+  --txt:#1a1a1a;--mut:#888888;--hint:#bbbbbb;--gold:#c8860a;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Segoe UI',Arial,sans-serif;background:var(--sur2);color:var(--txt);font-size:13px;}
+.topbar{background:#1B3A5C;border-bottom:none;padding:0 12px;display:flex;align-items:center;gap:2px;position:sticky;top:0;z-index:100;min-height:46px;flex-wrap:wrap;}
+.topbar-brand{font-weight:800;font-size:13px;color:#ffffff;margin-right:2px;white-space:nowrap;}
+.topbar-ver{font-size:9px;font-weight:600;color:rgba(255,255,255,.45);margin-right:8px;letter-spacing:.04em;align-self:flex-end;padding-bottom:14px;}
+.ntab{border:none;background:none;padding:12px 9px;font-size:11px;cursor:pointer;color:rgba(255,255,255,.65);border-bottom:2px solid transparent;font-family:inherit;white-space:nowrap;}
+.ntab.on{color:#ffffff;border-bottom-color:#ffffff;font-weight:600;}
+.ntab:hover{color:#ffffff;}
+.role-badge{margin-left:auto;padding:3px 9px;border-radius:20px;font-size:10px;font-weight:600;border:1px solid;flex-shrink:0;}
+.role-mentor{background:rgba(24,95,165,.25);color:#9EC8FF;border-color:rgba(158,200,255,.4);}
+.role-mentee{background:rgba(15,110,86,.25);color:#7BE8C8;border-color:rgba(123,232,200,.4);}
+.role-mgmt{background:rgba(133,79,11,.25);color:#FFD580;border-color:rgba(255,213,128,.4);}
+.page{display:none;padding:14px;max-width:960px;margin:0 auto;}
+.page.on{display:block;}
+.card{background:var(--sur);border:.5px solid var(--bdr);border-radius:10px;padding:14px;margin-bottom:12px;}
+.card-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.card-title{font-size:13px;font-weight:600;}
+.btn{border:.5px solid var(--bdr);background:var(--sur);border-radius:6px;padding:6px 13px;font-size:11px;cursor:pointer;color:var(--txt);font-family:inherit;transition:background .15s;}
+.btn:hover{background:var(--sur2);}
+.btn-pri{background:var(--acc);color:#fff;border-color:var(--acc);}
+.btn-pri:hover{background:#134e8a;}
+.btn-grn{background:var(--grn);color:#fff;border-color:var(--grn);}
+.btn-red{background:var(--red);color:#fff;border-color:var(--red);}
+.btn-sm{padding:4px 9px;font-size:10px;}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-bottom:12px;}
+.stat{background:var(--sur);border:.5px solid var(--bdr);border-radius:10px;padding:12px;text-align:center;}
+.stat-num{font-size:22px;font-weight:700;color:var(--acc);}
+.stat-lbl{font-size:10px;color:var(--mut);margin-top:2px;}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+/* TASK */
+.task-item{display:flex;align-items:flex-start;gap:8px;padding:7px 0;border-bottom:.5px solid var(--bdr);}
+.task-item:last-child{border-bottom:none;}
+.task-item input[type=checkbox]{margin-top:2px;width:15px;height:15px;cursor:pointer;accent-color:var(--acc);flex-shrink:0;}
+.task-label{flex:1;font-size:12px;line-height:1.5;cursor:pointer;}
+.task-item.done .task-label{text-decoration:line-through;color:var(--mut);}
+.task-tag{font-size:9px;padding:1px 5px;border-radius:8px;font-weight:600;margin-right:3px;}
+.tag-must{background:#FCEBEB;color:#A32D2D;}
+.tag-doc{background:#EEF2F7;color:#185FA5;}
+.tag-obs{background:#FFF8E1;color:#854F0B;}
+.tag-teach{background:#E1F5EE;color:#0F6E56;}
+.sop-btn{font-size:10px;padding:2px 7px;border-radius:10px;border:.5px solid var(--bdr);background:var(--sur2);color:var(--acc);cursor:pointer;white-space:nowrap;flex-shrink:0;font-family:inherit;margin-top:1px;}
+.sop-btn:hover{background:#EEF2F7;border-color:var(--acc);}
+/* TIMELINE */
+.timeline{display:flex;gap:0;margin-bottom:14px;}
+.stage-block{flex:1;position:relative;}
+.stage-bar{height:7px;background:var(--bdr);}
+.stage-block.done .stage-bar{background:var(--grn);}
+.stage-block.current .stage-bar{background:var(--acc);}
+.stage-dot{width:17px;height:17px;border-radius:50%;border:2px solid var(--bdr);background:var(--sur);position:absolute;top:-5px;left:50%;transform:translateX(-50%);display:flex;align-items:center;justify-content:center;font-size:8px;}
+.stage-block.done .stage-dot{background:var(--grn);border-color:var(--grn);color:#fff;}
+.stage-block.current .stage-dot{background:var(--acc);border-color:var(--acc);color:#fff;}
+.stage-lbl{text-align:center;font-size:8px;color:var(--mut);margin-top:14px;}
+.stage-block.current .stage-lbl{color:var(--acc);font-weight:600;}
+/* SOP MODAL */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.48);z-index:999;display:flex;align-items:center;justify-content:center;padding:8px;}
+.modal{background:var(--sur);border-radius:14px;width:min(580px,96vw);max-height:90vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,.28);}
+.modal-hdr{padding:12px 14px;border-bottom:.5px solid var(--bdr);display:flex;align-items:center;position:sticky;top:0;background:var(--sur);z-index:2;border-radius:14px 14px 0 0;gap:8px;}
+.modal-hdr-title{font-size:14px;font-weight:700;flex:1;}
+.modal-close{background:none;border:none;font-size:20px;color:var(--mut);cursor:pointer;flex-shrink:0;}
+.modal-body{padding:12px 14px;}
+.modal-foot{padding:10px 14px;border-top:.5px solid var(--bdr);display:flex;justify-content:flex-end;position:sticky;bottom:0;background:var(--sur);border-radius:0 0 14px 14px;}
+/* SOP STEP TABLE */
+.sop-step{display:flex;gap:8px;padding:7px 0;border-bottom:.5px solid var(--bdr);font-size:12px;}
+.sop-step:last-child{border-bottom:none;}
+.sop-step-n{font-size:10px;font-weight:700;color:var(--hint);min-width:20px;padding-top:1px;}
+.sop-step-body{flex:1;}
+.sop-step-title{font-weight:600;color:var(--txt);margin-bottom:2px;}
+.sop-step-do{color:var(--txt);line-height:1.55;}
+.sop-step-warn{font-size:10px;color:var(--red);margin-top:2px;}
+/* AGE TABLE */
+.age-table{width:100%;border-collapse:collapse;font-size:11px;margin-top:10px;}
+.age-table th{padding:6px 8px;text-align:left;border-bottom:.5px solid var(--bdr);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--mut);}
+.age-table td{padding:6px 8px;border-bottom:.5px solid var(--bdr);vertical-align:top;line-height:1.5;}
+.age-jr{background:#FFF8F0;}
+.age-in{background:#F0F7FF;}
+.age-sr{background:#F0FFF6;}
+.age-hdr-jr{background:#FFE8CC;color:#7a3500;font-weight:700;}
+.age-hdr-in{background:#C8DFFF;color:#0d3d7a;font-weight:700;}
+.age-hdr-sr{background:#B8F0D4;color:#0a4a28;font-weight:700;}
+/* WARN PILLS */
+.warn-pill{display:flex;gap:6px;align-items:flex-start;font-size:11px;padding:5px 8px;background:#FCEBEB;border-radius:6px;margin-bottom:4px;color:#7a1f1f;line-height:1.4;}
+/* SOP LIBRARY */
+.sop-card{background:var(--sur);border:.5px solid var(--bdr);border-radius:10px;padding:12px 14px;margin-bottom:8px;cursor:pointer;display:flex;align-items:center;gap:12px;transition:border-color .15s;}
+.sop-card:hover{border-color:var(--acc);}
+.sop-icon{font-size:22px;flex-shrink:0;}
+.sop-cat-badge{font-size:9px;padding:2px 7px;border-radius:8px;font-weight:600;}
+.cat-monday{background:#FFF8E1;color:#854F0B;}
+.cat-daily{background:#E1F5EE;color:#0F6E56;}
+.cat-teaching{background:#EEF2F7;color:#185FA5;}
+.cat-closing{background:#F3EEF9;color:#6B3FA0;}
+.cat-morning{background:#FFF3E0;color:#E65100;}
+.cat-end{background:#F3EEF9;color:#6B3FA0;}
+/* REPORT */
+textarea{width:100%;border:.5px solid var(--bdr);border-radius:6px;padding:8px;font-family:inherit;font-size:12px;resize:vertical;background:var(--sur);color:var(--txt);}
+input[type=text],input[type=date],select{border:.5px solid var(--bdr);border-radius:6px;padding:7px 10px;font-family:inherit;font-size:12px;background:var(--sur);color:var(--txt);width:100%;}
+label.lbl{font-size:11px;color:var(--mut);display:block;margin-bottom:4px;margin-top:10px;}
+label.lbl:first-child{margin-top:0;}
+/* MISC */
+.alert{padding:9px 12px;border-radius:8px;font-size:12px;margin-bottom:7px;display:flex;align-items:center;gap:7px;line-height:1.45;}
+.alert-red{background:#FCEBEB;border:.5px solid #F09595;color:#7a1f1f;}
+.alert-amb{background:#FFF8E1;border:.5px solid #F9CB42;color:#7a4500;}
+.alert-grn{background:#E1F5EE;border:.5px solid #9FE1CB;color:#065041;}
+.alert-blue{background:#EEF2F7;border:.5px solid #AABDD4;color:#143d6e;}
+.chip{display:inline-block;padding:2px 7px;border-radius:10px;font-size:9px;font-weight:600;}
+.chip-grn{background:#E1F5EE;color:var(--grn);}
+.chip-amb{background:#FFF8E1;color:var(--amb);}
+.chip-red{background:#FCEBEB;color:var(--red);}
+.chip-blue{background:#EEF2F7;color:var(--acc);}
+.chip-pur{background:#F3EEF9;color:var(--pur);}
+.prog-bar{background:var(--bdr);border-radius:99px;height:5px;overflow:hidden;margin-top:4px;}
+.prog-fill{height:100%;border-radius:99px;background:var(--acc);transition:width .3s;}
+.prog-fill.grn{background:var(--grn);}
+.cohort-card{background:var(--sur);border:.5px solid var(--bdr);border-radius:10px;padding:12px 14px;margin-bottom:9px;cursor:pointer;transition:border-color .15s;}
+.cohort-card:hover{border-color:var(--acc);}
+.cohort-meta{font-size:10px;color:var(--mut);margin-top:3px;}
+.day-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:10px;}
+.day-btn{padding:5px 3px;border-radius:6px;border:.5px solid var(--bdr);background:var(--sur);cursor:pointer;font-size:9px;text-align:center;font-family:inherit;color:var(--mut);}
+.day-btn.active{background:var(--acc);color:#fff;border-color:var(--acc);}
+.day-btn.done{background:#E1F5EE;border-color:#9FE1CB;color:var(--grn);}
+.day-btn.locked{opacity:.4;cursor:not-allowed;}
+.itab-row{display:flex;gap:0;border-bottom:.5px solid var(--bdr);margin-bottom:12px;overflow-x:auto;}
+.itab{padding:7px 12px;font-size:11px;cursor:pointer;color:var(--mut);border-bottom:2px solid transparent;background:none;border-top:none;border-left:none;border-right:none;font-family:inherit;white-space:nowrap;}
+.itab.on{color:var(--acc);border-bottom-color:var(--acc);font-weight:600;}
+.saved-flash{position:fixed;bottom:18px;right:18px;background:var(--grn);color:#fff;padding:7px 14px;border-radius:20px;font-size:11px;z-index:9999;opacity:0;transition:opacity .3s;pointer-events:none;}
+/* LOGIN */
+.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--sur2);}
+.login-box{background:var(--sur);border:.5px solid var(--bdr);border-radius:16px;padding:32px 28px;width:380px;text-align:center;box-shadow:0 4px 24px rgba(0,0,0,.08);}
+.login-logo{font-size:22px;font-weight:800;color:var(--acc);margin-bottom:3px;letter-spacing:-.3px;}
+.login-sub{font-size:10px;color:var(--mut);margin-bottom:20px;}
+.role-btn{width:100%;padding:13px;margin-bottom:8px;border-radius:10px;border:1.5px solid var(--bdr);background:var(--sur);cursor:pointer;font-family:inherit;font-size:12px;font-weight:600;display:flex;align-items:center;gap:10px;transition:all .15s;text-align:left;}
+.role-btn:hover{border-color:var(--acc);background:#F0F6FF;}
+.role-btn .icon{font-size:20px;}
+.role-btn small{font-size:10px;color:var(--mut);font-weight:400;display:block;}
+@media(max-width:600px){.stats{grid-template-columns:1fr 1fr;}.grid2{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+<div class="saved-flash" id="savedFlash">✓ Saved</div>
+
+<!-- LOGIN -->
+<div class="login-wrap" id="loginScreen">
+  <div class="login-box">
+    <div style="font-size:40px;margin-bottom:10px">🎯</div>
+    <div class="login-logo">TrainGo System</div>
+    <div class="login-sub">SRK · Gentle but Firm · New Teacher Training</div>
+    <div style="margin-top:22px;text-align:left">
+      <label style="font-size:12px;font-weight:600;color:var(--txt);display:block;margin-bottom:7px">Password</label>
+      <input type="password" id="loginPwInput" placeholder="Enter password"
+        style="width:100%;padding:12px 14px;border:1.5px solid var(--bdr);border-radius:10px;font-size:14px;font-family:inherit;background:var(--sur);color:var(--txt);outline:none;transition:border .15s"
+        onfocus="this.style.borderColor='var(--acc)'" onblur="this.style.borderColor='var(--bdr)'"
+        onkeydown="if(event.key==='Enter')loginWithPassword()">
+    </div>
+    <div id="loginError" style="display:none;margin-top:8px;padding:8px 12px;background:#FCEBEB;border-radius:8px;font-size:11px;color:#7a1f1f;text-align:left">
+      ❌ Incorrect password. Please try again.
+    </div>
+    <button onclick="loginWithPassword()"
+      style="width:100%;margin-top:16px;padding:14px;border-radius:10px;border:none;background:#1B3A5C;color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;transition:background .15s"
+      onmouseover="this.style.background='#243f65'" onmouseout="this.style.background='#1B3A5C'">
+      Sign In →
+    </button>
+    <div style="margin-top:14px;font-size:10px;color:var(--hint)">Contact Management if you need your password.</div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="mainApp" style="display:none">
+  <div class="topbar">
+    <span class="topbar-brand">🎯 TrainGo</span>
+    <span class="topbar-ver" id="topbarVer"></span>
+    <button class="ntab on" onclick="goPage('dashboard')">🏠 Home</button>
+    <button class="ntab" onclick="goPage('tasks')">📋 Tasks</button>
+    <button class="ntab" onclick="goPage('report')">📝 Report</button>
+    <button class="ntab" onclick="goPage('progress')">📊 Progress</button>
+    <button class="ntab" onclick="goPage('sop')">📖 SOP</button>
+    <button class="ntab" onclick="goPage('handbook')">🏫 Handbook</button>
+    <button class="ntab" id="tab-mgmt" style="display:none" onclick="goPage('mgmt')">⚙️ Settings</button>
+    <span id="roleBadgeTop" class="role-badge" style="margin-left:auto"></span>
+    <button class="btn btn-sm" onclick="exportData()" style="margin-left:8px;flex-shrink:0;background:rgba(255,255,255,.15);color:#fff;border-color:rgba(255,255,255,.3)">↑ Export</button>
+    <button class="btn btn-sm" onclick="importData()" style="margin-left:4px;flex-shrink:0;background:rgba(255,255,255,.15);color:#fff;border-color:rgba(255,255,255,.3)">↓ Import</button>
+    <button class="btn btn-sm" onclick="logout()" style="margin-left:4px;flex-shrink:0;background:rgba(255,255,255,.1);color:rgba(255,255,255,.7);border-color:rgba(255,255,255,.2)">Logout</button>
+  </div>
+  <input type="file" id="importFileInput" accept=".json" style="display:none" onchange="handleImportFile(this)">
+  <div class="page on" id="page-dashboard"><div id="dashboard-content"></div></div>
+  <div class="page" id="page-tasks"><div id="tasks-content"></div></div>
+  <div class="page" id="page-report"><div id="report-content"></div></div>
+  <div class="page" id="page-progress"><div id="progress-content"></div></div>
+  <div class="page" id="page-sop"><div id="sop-content"></div></div>
+  <div class="page" id="page-handbook"><div id="handbook-content"></div></div>
+  <div class="page" id="page-mgmt"><div id="mgmt-content"></div></div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════════
+// SOP DATA — 13 STEPS
+// ══════════════════════════════════════════════════════════════
+const SOP_DATA = {
+  hygiene:{id:'hygiene',n:1,name:'Hygiene Checking',nameZh:'Head-to-Toe Check',icon:'👀',when:'MONDAY ONLY',cat:'monday',
+    steps:[
+      {n:1,title:'Hair',warn:'⚠️ Lice / Nits',do_:'Check hair & scalp carefully'},
+      {n:2,title:'Forehead',warn:'⚠️ Fever',do_:'Touch forehead to check temperature'},
+      {n:3,title:'Eyes',warn:'⚠️ Eye Infection',do_:'"Open eyes big big. Look up, look down, look left, look right."'},
+      {n:4,title:'Face & Mouth',warn:'⚠️ HFMD · Mouth sores · Ulcers · Flu',do_:'Use torch: "Say AHHH! Show me your tongue." Ask: "Throat pain? Mouth pain?" Model cough/sneeze sounds.'},
+      {n:5,title:'Body & Skin',warn:'⚠️ HFMD · Chickenpox — red spots, blisters',do_:'"Turn around!" Check skin for red spots or blisters.'},
+      {n:6,title:'Hands & Fingers',warn:'⚠️ HFMD · Chickenpox · Nail length (must be short)',do_:'"Show me your hands! Turn behind! Hands on the table!" Check palms, back of hands, and fingernails.'},
+      {n:7,title:'Feet',warn:'⚠️ HFMD — red spots / blisters',do_:'"Feet up! Flamingo!" — check both feet.'},
+      {n:8,title:'Uniform & Cleanliness',warn:'',do_:'Encourage: brush teeth, wash face, tuck in shirt. Come to school in neat uniform daily.'},
+    ],
+    age:{
+      jr:{tips:['DEMONSTRATE entire flow WITH student','CHECK each part together step by step','GUIDE every action slowly','HELP student with actions','MODEL funny sounds (cough/sneeze!) — make it fun','ENCOURAGE participation — never scare them'],goal:'Stands still, follows simple instructions, not scared, cooperates, laughs at funny parts'},
+      in_:{tips:['DEMONSTRATE entire flow','GUIDE student through steps','ENCOURAGE independent actions','MONITOR understanding','MODEL clear voice & actions'],goal:'Follows sequence, does actions independently, responds to questions, more confident'},
+      sr:{tips:['BRIEF reminder only','GUIDE through quickly','MONITOR compliance','Quick efficient check'],goal:'Knows entire routine, follows independently, quick cooperation, no anxiety, efficient'},
+    },
+    warns:['🚨 INFECTIOUS DISEASE SIGNS → bring to MGMT IMMEDIATELY','⚠️ Same hygiene issue 3 weeks in a row → Report to MGMT','⚠️ Student reports mouth pain multiple times → Track','⚠️ Frequent "not feeling well" → Inform parents','📝 Normal concerns: record in Hygiene Checklist weekly'],
+  },
+
+  bookcollect:{id:'bookcollect',n:2,name:'Collection of Books',nameZh:'Collect by Subject',icon:'📚',when:'MONDAY ONLY',cat:'monday',
+    steps:[
+      {n:1,do_:'Announce: "Take out ALL your books. Submit by subject." Give time to prepare.'},
+      {n:2,do_:'Students submit books. Walk around to check, sort by subject, stack neatly.'},
+      {n:3,do_:'Check subject by subject: "English book!" Count each. Compare with attendance number.'},
+      {n:4,warn:'⚠️ Number wrong',do_:'"Everyone stand up!" → Call names one by one → Check bags → Check cupboard → Sit when confirmed.'},
+      {n:5,warn:'Report: Unfound Book',do_:'Write student name on board (top right) → Photo → WhatsApp to MGMT group.'},
+      {n:6,do_:'Keep books in cupboard by subject. Continue to next activity.'},
+    ],
+    age:{
+      jr:{tips:['DEMONSTRATE how to take out & submit','HELP sort books FOR them','Name each subject clearly','Show WHERE in cupboard to keep books'],goal:'Can take out books with help, learning to submit, follows teacher guidance'},
+      in_:{tips:['GUIDE sorting: "Find your English book"','Help if stuck','Check organization','Encourage neatness'],goal:'Can sort with guidance, knows most subjects, improving organization'},
+      sr:{tips:['BRIEF instruction only','MONITOR independently','Should be efficient — quick process'],goal:'Sorts independently, neat organization, all subjects correct, no prompting needed'},
+    },
+    warns:['⚠️ 3 weeks consecutive missing same book → Serious concern → Parent contact needed','📝 Photo + WhatsApp to MGMT when names written on board'],
+  },
+
+  attendance:{id:'attendance',n:3,name:'Take Attendance',nameZh:'Roll Call',icon:'✋',when:'EVERY DAY',cat:'daily',
+    steps:[
+      {n:1,do_:'Lead the morning chant:<br>Teacher: "Clap clap — good morning children!"<br>Students: "Clap clap — good morning Teacher!"<br><br>Wait for full quiet. "Sit properly. Listen for your name."'},
+      {n:2,do_:'Call each name CLEARLY and LOUDLY. Wait for response. Make eye contact. Verify it\'s the right student.'},
+      {n:3,warn:'⚠️ Too quiet / shy',do_:'"Louder please! Show me your STRONG voice!" Praise loud responses. Make it FUN — different voices, raise hand HIGH!'},
+      {n:4,do_:'Tick (✓) attendance sheet immediately and accurately. Record on correct line.'},
+      {n:5,warn:'⚠️ Absent (3+ times → MGMT)',do_:'Note absent student clearly in book. Inform MGMT for 3 or more absences.'},
+      {n:6,warn:'⚠️ Late (3+ times/week → MGMT)',do_:'Note exact time of arrival. Record in attendance book. 3+ times per week → Weekly report → Inform MGMT.'},
+      {n:7,do_:'Close attendance book. "Let\'s start our lesson!" Transition smoothly to next activity.'},
+    ],
+    age:{
+      jr:{tips:['GUIDE to sit: help them settle, very patient','CALL with warm tone: "Say Yes Teacher!"','ENCOURAGE with actions: "Raise your hand HIGH!"','PRAISE any response — build confidence gradually'],goal:'Responds to own name, any sound is good, learning to respond, not scared'},
+      in_:{tips:['CALL clearly, expect response','Encourage louder voice: "I know you can!"','Fun actions to keep energy up','Praise improvement in volume'],goal:'Responds clearly "Yes Teacher!", appropriate volume, knows routine, consistent'},
+      sr:{tips:['CALL name — expect immediate loud response','Brief fun encouragement only','MONITOR — should be automatic'],goal:'Immediate response, "Yes Teacher!" loudly, proper voice, no prompting needed'},
+    },
+    warns:['⚠️ Absent 3+ times → Inform MGMT immediately','⚠️ Late 3+ times per week → Weekly report to MGMT','💡 Make it FUN — variety keeps students alert and responsive'],
+  },
+
+  washroom:{id:'washroom',n:4,name:'Washroom + Water Break',nameZh:'Restroom & Hydration',icon:'🚿',when:'EVERY DAY',cat:'daily',
+    stepGroups:[
+      {groupTitle:"🚿 Washroom",color:"#185FA5",bg:"#EEF5FF",border:"#AABDD4",steps:[
+        {n:1,title:"Form the Queue",do_:'"Boys 1 line, girls 1 line." Boys left, girls right. No pushing.'},
+        {n:2,title:"Walk to Washroom",do_:'Lead students: "Walk SLOWLY and QUIETLY." Keep group together. No running.'},
+        {n:3,title:"Enter One by One",do_:'Enter one by one. Wait outside door. Monitor time. Knock if taking too long.'},
+        {n:4,title:"Hand Washing",do_:'Supervise hand washing: "Use SOAP! Scrub 20 seconds!" Check ALL students washed properly.'},
+        {n:5,title:"Return to Class",do_:'"Walk back quietly." Count students before leaving. Keep group together.'},
+      ]},
+      {groupTitle:"💧 Water Break",color:"#0F6E56",bg:"#E8F7F2",border:"#9FE1CB",steps:[
+        {n:1,title:"Distribute Water",do_:'"Water time! Take out water bottles." Check who has water. Note who forgot.'},
+        {n:2,title:"Monitor Drinking",do_:'Monitor drinking: "Drink slowly. 50% now, 50% later." Watch pace. No rushing.'},
+        {n:3,title:"Close Bottles",do_:'"Close your bottle tightly." Check all caps closed. Wipe any spills immediately.'},
+        {n:4,title:"Put Away & Continue",do_:'"Put bottles away." Check desks are clear. Continue lesson.'},
+      ]},
+    ],
+    steps:[],
+    age:{
+      jr:{tips:['JR queue: "Hands on friend\'s shoulder — DuDu Train! Du Du Du!"','LEAD closely — walk WITH them','HELP wash hands: turn tap, put soap on hands, count 20 TOGETHER','OPEN bottle cap FOR them / HELP close tightly','Be very patient throughout'],goal:'Queues with help, washes with full support, drinks some water, no spills'},
+      in_:{tips:['GUIDE clearly: "Boys left, girls right"','SUPERVISE washing: check soap used, scrub properly','GUIDE closing bottle: "Twist tight!"','MONITOR drinking amount: not too fast, save some'],goal:'Queues correctly, washes independently, manages bottle, drinks right amount'},
+      sr:{tips:['BRIEF instruction — should know routine','MONITOR only: spot checks','EXPECT automatic behaviour'],goal:'Perfect routine, self-managed, efficient, 50% water management, no supervision needed'},
+    },
+    warns:['⏰ Washroom total: 10–15 minutes','⏰ Water break: 2–3 minutes only','⚠️ Count students BEFORE leaving classroom and AFTER returning','💡 JR DuDu Train makes queuing fun and orderly'],
+  },
+
+  recess:{id:'recess',n:5,name:'Recess / Mealtime',nameZh:'Eating & Hygiene',icon:'🍱',when:'EVERY DAY',cat:'daily',
+    steps:[
+      {n:1,do_:'Announce food time. Check who has food & milk. Help open containers. Note who has none — pass school food.'},
+      {n:2,do_:'Queue → Washroom → Wash hands with SOAP before eating. (Follow Washroom procedure.)'},
+      {n:3,do_:'All students seated. Food ready. Lead slogan: "Teachers and friends, let\'s eat together!" THEN eat.'},
+      {n:4,warn:'⚠️ Monitor throughout',do_:'Watch: pace (not too fast), amount, sharing (STOP!), spoiled food (don\'t eat!). 3 days not eating → contact parents.'},
+      {n:5,do_:'"Clean your table. Wipe with tissue. Pick up any spills." Check all tables clean before leaving.'},
+      {n:6,do_:'Wash hands AGAIN with SOAP after eating. Check all students washed.'},
+    ],
+    age:{
+      jr:{tips:['OPEN ALL containers and milk FOR them','KK helps make milk powder (leave on table at corner)','Pass school food to students with none','HELP eat if needed — patient, never force','WIPE table FOR them after eating'],goal:'Food & milk ready (teacher prepared), eats some food, proper pace, table cleaned with help'},
+      in_:{tips:['HELP open hard containers only','GUIDE eating pace: "Not too fast"','MONITOR table manners','GUIDE cleaning: "Wipe your table"'],goal:'Prepares mostly alone, eats independently, better manners, can clean table'},
+      sr:{tips:['MONITOR only — spot checks','EXPECT good table manners','Quick check on table cleanliness'],goal:'Fully independent prep, excellent table manners, self-regulated, cleans table alone'},
+    },
+    warns:['⏰ Total mealtime: 20–30 minutes','⚠️ 3 consecutive days not eating → Inform parents immediately','⚠️ Sharing food → STOP immediately (hygiene + fairness)','⚠️ Suspicious/spoiled food → Don\'t eat, inform MGMT'],
+  },
+
+  flash:{id:'flash',n:6,name:'Group Reading A: Flash Card',nameZh:'Spell-Read Technique',icon:'🃏',when:'TEACHING',cat:'teaching',
+    steps:[
+      {n:1,do_:'Check body position: "Turn your body & Fold your arms."'},
+      {n:2,do_:'Teach the reading technique:<br>JR & IN: "Spell and Read" — Mouth Spell, Mouth Read<br>IN & SR: "Read and Spell" — Heart Spell, Mouth Read<br><br>Demonstrate clearly. Repeat 3 times together.'},
+      {n:3,do_:'Monitor focus: Is every mouth reading? Concentrating? Following along? Walk around and check each student.'},
+      {n:4,do_:'Random spot checks — call specific individual students to read aloud. Vary who you call.'},
+      {n:5,do_:'Correct answer → Sticker + specific praise.<br>Incorrect → encourage, guide gently, praise the attempt.'},
+    ],
+    age:{
+      jr:{tips:['DEMONSTRATE body position AND HELP each student physically','Point at each card, read SLOWLY','Random checks: HELP if stuck — no pressure','PRAISE EVERYTHING: "You tried so hard!"','Instruct: "Do this at home with parents!"'],goal:'Tries to follow, learning the concept, mouth must be reading, not scared, building confidence'},
+      in_:{tips:['DEMONSTRATE technique clearly: spell in heart, read with mouth','PRACTICE together, repeat 3 times minimum','Encourage and help as needed','Random checks: encourage confidence'],goal:'Can spell in heart, reads out loud, follows routine, responding to checks, growing confidence'},
+      sr:{tips:['BRIEF demonstration: "Read then spell" (standard for SR)','EXPECT accuracy from random checks','Quick corrections only','High praise standard'],goal:'Independent practice, good technique, clear pronunciation, meets accuracy standard'},
+    },
+    warns:['🚫 NO SHOUTING — use clear, firm voice only','💡 Build Star Students — consistent praise creates self-motivated learners','⚠️ Every mouth must be reading — check ALL students, not just the front row','💡 Instruct to practice at home with parents'],
+  },
+
+  book:{id:'book',n:7,name:'Group Reading B: Reading Book',nameZh:'Guided Group Reading',icon:'📖',when:'TEACHING',cat:'teaching',
+    steps:[
+      {n:1,do_:'Write page number on whiteboard CLEARLY. "Open your Reading Book to Page XX."'},
+      {n:2,do_:'"Fold your book." Demonstrate the folding technique. All students fold before reading.'},
+      {n:3,do_:'"Show and point with your finger." Model correct finger-pointing technique.'},
+      {n:4,do_:'TEACHER READS FIRST — clear, loud, slow. Model the correct reading. Then: "Read together!" × 3 times.'},
+      {n:5,do_:'Correct intonation and pace immediately when needed. Adjust to students\' reading speed.'},
+      {n:6,do_:'Good effort → Sticker + praise. Build positive association with reading.'},
+    ],
+    age:{
+      jr:{tips:['HELP find page and fold book','Point at EACH WORD, read VERY slowly','Exaggerate pronunciation for clarity','Repeat 3+ times','PRAISE everything: "You tried so hard!"'],goal:'Tries to read along, points at words, makes sounds, building confidence'},
+      in_:{tips:['GUIDE to find page and fold book','READ clearly at good pace, 3 times','ENCOURAGE reading along loudly','Support attempts, help with hard words'],goal:'Reads along loudly, points at words, most words correct, growing confidence'},
+      sr:{tips:['BRIEF: "Open page XX"','READ with expression — good model','EXPECT fluent reading and accurate pronunciation'],goal:'Reads fluently together, accurate pronunciation, confident voice, good habit'},
+    },
+    warns:['💡 Fold book → easier to hold and read','💡 Finger pointing → builds text tracking habit, prevents guessing','⚠️ Teacher ALWAYS reads first — model before expecting students to read'],
+  },
+
+  spelling:{id:'spelling',n:8,name:'Spelling',nameZh:'Spelling Test',icon:'✏️',when:'TEACHING',cat:'teaching',
+    steps:[
+      {n:1,do_:'Write ALL words on whiteboard — CLEAR, LARGE letters. Underline key sounds/patterns.'},
+      {n:2,do_:'Revise together: "Read with me!" 3 times minimum. All students join. Clear pronunciation.'},
+      {n:3,do_:'Optional: Turn-and-test with partner or fill-in-blank activity.'},
+      {n:4,do_:'Distribute pencils/spelling books. Check everyone has materials. Open to correct page.'},
+      {n:5,do_:'Students copy INFO from board:<br>TITLE (Spelling) + DATE (top right)<br>+ NUMBERING (1, 2, 3...)<br>+ NAME at the end.<br><br>MUST CHECK!'},
+      {n:6,do_:'ERASE whiteboard completely.<br>Announce: "Spelling starts now!"<br>Remind: "Handwriting must be NEAT!"<br><br>*JR exception: fill-in-blank activities.'},
+      {n:7,do_:'Read Q1 (in random order, not sequential).<br>Walk around and mark IMMEDIATELY.<br>Continue with Q2, Q3......<br><br>Marking system: 1st error ( ) · 2nd ( ).. · 3rd ( )... · 4th+ = X & One Correction'},
+      {n:8,do_:'Last word: students queue at teacher\'s desk. Mark in front of student. Count errors together.'},
+      {n:9,warn:'⚠️ Very weak 3 weeks in a row → Inform MGMT',do_:'Record results in teacher book: score, common errors, progress, improvement.'},
+      {n:10,do_:'Return books. "Practice at home!" Praise effort, improvement, and any milestone reached.'},
+    ],
+    age:{
+      jr:{tips:['Write VERY BIG on board','Read SLOWLY, point at each letter','JR method: FILL IN THE BLANK (not full erase)','HELP write title + date + name','CHECK copying step by step','PRAISE: "Beautiful writing! You tried so hard!"'],goal:'Understands concept, copies letters with support, good effort, positive experience'},
+      in_:{tips:['GUIDE closely during copying: check title + date + numbering','Erase ONE BY ONE','Walk around and mark immediately','Encourage 80%+ score','Explain mistakes kindly'],goal:'Understands spelling, 80%+ correct, good handwriting, learns from corrections'},
+      sr:{tips:['BRIEF reminder on format standards','ERASE ALL at once — full test mode','MONITOR quality, strict standards','EXPECT 100% effort and neat handwriting'],goal:'Independent spelling, 100% effort, neat handwriting, self-motivated to improve'},
+    },
+    warns:['⚠️ ERASE board completely before test (EXCEPT JR — fill-in-blank method)','📝 Marking system: 1st error ( ) · 2nd ( ).. · 3rd ( )... · 4th+ = X & One Correction','💡 Walk around and mark IMMEDIATELY — never wait till the end','⚠️ Very weak 2 weeks in a row → Inform MGMT (learning difficulty concern)'],
+  },
+
+  copyboard:{id:'copyboard',n:9,name:'Copy Whiteboard',nameZh:'Silent Copy Exercise',icon:'📝',when:'TEACHING',cat:'teaching',
+    steps:[
+      {n:1,do_:'Write on board CLEARLY: large neat handwriting, good spacing, organised layout.<br>Explain the copying rules & skills.'},
+      {n:2,do_:'Explain format: Title at top / Date (top right) / draw lines / spacing......'},
+      {n:3,do_:'SILENT copying time.<br>Remind: "Handwriting must be NEAT!"<br>No talking. Sit properly. Focus on work.'},
+      {n:4,do_:'Walk around constantly.<br>Mark errors ( ).<br>Found same error in more than 2 students → explain on whiteboard immediately → guide correction.'},
+    ],
+    age:{
+      jr:{tips:['WRITE VERY BIG with extra spacing on board','DEMONSTRATE writing "on air" — very detailed','FIX pencil grip CONSTANTLY — this is a priority','Watch for mirroring: b/d confusion, p/q (letter reversal)','HELP correct together: guide their hand','Very patient — any completion is success'],goal:'Copies 2–3 words (slowly is OK!), improving pencil grip, any completion = success, not frustrated'},
+      in_:{tips:['WRITE clearly with 1–2 sample answers on board','SUPERVISE closely: pencil grip, letter formation, mirroring','Help when stuck, remind format standards','GUIDE corrections: show the mistake, student corrects it'],goal:'Can copy independently, better pencil control, improving accuracy, understands format'},
+      sr:{tips:['WRITE standard format with sample answers','MONITOR quality: check grip occasionally','EXPECT self-correction: point out error, student fixes alone','High handwriting standards'],goal:'Perfect copying, VERY neat handwriting, completes all tasks, independent self-correction'},
+    },
+    warns:['⚠️ Watch for: pencil grip problems, skipping letters/words, mirroring (letter reversal — b/d, p/q), very slow pace','⚠️ "Handwriting must be NEAT!" — say this before AND during copying time','💡 Walk AROUND CONSTANTLY — never sit at teacher\'s desk during copy time'],
+  },
+
+  indread:{id:'indread',n:10,name:'Individual Reading',nameZh:'1-on-1 Reading Assessment',icon:'🧒',when:'TEACHING',cat:'teaching',
+    steps:[
+      {n:1,do_:'Write on board: "Individual Reading — Reading Book Page XX." All students take out correct book and open to page.'},
+      {n:2,do_:'Call 2 students at a time: always 1 STRONG + 1 WEAK pairing. This is intentional peer learning.'},
+      {n:3,do_:'Instruct pair: "[Strong name] read LOUDLY, [Weak name] follow SOFTLY."'},
+      {n:4,do_:'Strong student reads aloud clearly. Weak student follows. Then weak student tries to read alone.'},
+      {n:5,do_:'Mark in reading book immediately: UNDERLINE _ = can\'t read · CIRCLE ○ = totally unable to read.'},
+      {n:6,do_:'Record progress in teacher\'s tracking book using shortcut key system.'},
+      {n:7,do_:'"Good job! You\'re improving!" Encourage student to read at home. Big genuine praise.'},
+    ],
+    age:{
+      jr:{tips:['DEMONSTRATE how to read WITH the student first','READ together, point at each word','Help weak student extensively — may need to read for them first','PRAISE HEAVILY for any attempt — make them love reading'],goal:'Not scared to come to teacher, comes willingly, listens and learns, willing to try'},
+      in_:{tips:['MONITOR both students in the pair','Help weak student track with finger','Encourage strong student to read clearly','Explain marking symbols after session'],goal:'Reads along, learns from strong peer, growing confidence, understands feedback'},
+      sr:{tips:['BRIEF instruction — should know the routine','LISTEN for fluency accuracy','Note error patterns in tracking book','Efficient pair process'],goal:'Fluent and confident reading, effective peer learning, accepts feedback constructively'},
+    },
+    warns:['💡 Always pair STRONG + WEAK — peer learning is more powerful than solo reading','⚠️ Mark in reading book IMMEDIATELY — never rely on memory','📝 Record in tracking book EVERY session — patterns reveal learning difficulties'],
+  },
+
+  activity:{id:'activity',n:11,name:'Activity / Grammar / Worksheet',nameZh:'Activities / Grammar / Worksheet',icon:'🎨',when:'TEACHING',cat:'teaching',
+    steps:[
+      {n:1,title:'OPTION A: Grammar / Worksheet',do_:'Write page on board. Show SAMPLE ANSWERS (correct ✓ vs wrong ✗). Explain the rule in simple words.'},
+      {n:2,do_:'Do Q1–Q2 TOGETHER on board. Call one student to try Q3. Then release: "Now you try on your own!"'},
+      {n:3,do_:'Walk around and check as students work. Mark mid-way, not only at the end.'},
+      {n:4,do_:'Review answers together at end. Students correct their own errors. Discuss common mistakes.'},
+      {n:5,title:'OPTION B: Activities',do_:'Choose one: Songs with actions / Educational games / Story time / Revision activities / Quick Fire Quiz'},
+    ],
+    age:{
+      jr:{tips:['JR = ACTIVITIES ONLY — NO grammar papers for JR','Songs with movements, colouring, story time, play-based learning','DEMONSTRATE all actions with energy','LEAD activities and participate with them'],goal:'Fun learning, active participation, enjoying class, developing motor skills'},
+      in_:{tips:['SIMPLE grammar only: very basic paper, lots of pictures, circle/colour tasks','HELP constantly during worksheet work','BALANCED approach: educational games + some basic grammar'],goal:'Can try simple tasks, learning grammar basics, needs support, positive attitude toward learning'},
+      sr:{tips:['REGULAR grammar: age-appropriate exercises','Demo Q1–Q2, students work independently after','DISCUSS errors at end — teach from mistakes','MONITOR and assess progress'],goal:'Completes independently, understands grammar rules, good accuracy, developing critical thinking'},
+    },
+    warns:['⚠️ JR = ACTIVITIES ONLY — never give grammar papers to JR students','💡 ALWAYS demo before releasing students to work independently','⚠️ Walk around WHILE students work — never sit at desk during this activity'],
+  },
+
+  summary:{id:'summary',n:12,name:'Summary & SEEDS Encouragement',nameZh:'Closing & Encouragement',icon:'🌱',when:'CLOSING',cat:'closing',
+    stepGroups:[
+      {groupTitle:"📋 Summary",color:"#0F6E56",bg:"#E8F7F2",border:"#9FE1CB",steps:[
+        {n:1,title:"Summary",do_:'SUMMARY: "Today we learned..." — briefly recap the 2-3 main things learned in class.'},
+        {n:2,title:"Encouragement",do_:'ENCOURAGEMENT: "You all did so well today!" — give specific, genuine praise for real effort or achievement.'},
+      ]},
+      {groupTitle:"🌱 SEEDS Encouragement",color:"#5B35C4",bg:"#F4F0FF",border:"#C5B3F5",steps:[
+        {n:1,title:"🌟 Build Star",do_:'Give special recognition or a task to a star student. Tell the whole class specifically WHY they earned it.'},
+        {n:2,title:"👀 See and Say",do_:'Point to something visible in the room or outside. "What is this? Say it LOUDLY!" Real-life vocabulary connection.'},
+        {n:3,title:"👨‍👩‍👧 Teach Parents",do_:'"Today teach your parents this song / phrase / word at home!" Makes parents partners in learning.'},
+        {n:4,title:"🏠 Do at Home",do_:'"Tonight, please do this at home..." Give ONE specific, simple task. Visible learning beyond school.'},
+        {n:5,title:"🎉 Tomorrow Preview",do_:'"Tomorrow we will..." — build excitement and anticipation. Do not be late — amazing things are coming!'},
+      ]},
+    ],
+    steps:[],
+    age:{
+      jr:{tips:['Keep summary VERY short and simple: 1–2 sentences','BIG celebration praise: clap together, high five','SEEDS: keep it simple and fun','MODEL the action for See and Say','Make Tomorrow Preview exciting: "SO fun tomorrow!"'],goal:'Feels proud and happy, excited to come back tomorrow, positive memory of today'},
+      in_:{tips:['Summary: 2–3 key learning points','Specific named praise: "Lim XX read all words correctly!"','SEEDS: explain clearly what to do at home','Connect Do at Home to parents'],goal:'Remembers what was learned, proud of achievement, motivated for next class'},
+      sr:{tips:['Summary: what we learned + why it matters','Praise specific achievement and improvement','SEEDS: expect independence in follow-through'],goal:'Can articulate what was learned, self-motivated, takes ownership of homework task'},
+    },
+    warns:['💡 SEEDS: do 1–2 per class. Cover ALL 5 within one month.','💡 "Write as you teach" — record SEEDS done in Day Report immediately after class','⚠️ Specific praise is always more powerful than general praise: name + what they did well'],
+  },
+
+  morning:{id:"morning",n:0,name:"Before Class: Morning Routine",nameZh:"Ready Class & Morning Duty",icon:"🌅",when:"EVERY DAY",cat:"morning",
+    timeline:[
+      {
+        time:"7:45am",label:"Ready Class",color:"#0F6E56",bg:"#E8F7F2",border:"#9FE1CB",
+        items:[
+          {icon:"🖊️",title:"Ready Whiteboard",body:"RIGHT side: Date / Abs / Book (Unfound) / Special MISC (e.g. Puasa). LEFT side: Day / Follow Up. OTHER: Copy exercises with 2 colours. Copy Spelling / Ejaan."},
+          {icon:"📋",title:"Ready Attendance Book",body:"Open to today and place on desk before first student arrives."},
+          {icon:"🎒",title:"Ready Teaching Materials",body:"Matching Board · Counting Toys · Flash Cards · lesson-specific materials."},
+          {icon:"⭐",title:"Ready Rewards",body:"Stickers, stamps. Replenish if running low."},
+        ]
+      },
+      {
+        time:"8:00am",label:"Duty Starts",color:"#185FA5",bg:"#EEF5FF",border:"#AABDD4",
+        note:"Move to your assigned station promptly. Know your station before Day 1 — ask Mentor if unsure.",
+        items:[
+          {icon:"🚪",title:"Corridor Downstairs",warn:"Stay Alert for Cars",body:"Welcome students with HUHAHUHA energy. Alert for MISC & crying kids. Check temperature. Pass messages to MGMT."},
+          {icon:"👟",title:"Shoes Area",warn:"SEND CRYING KIDS FIRST · X-Ray Students",body:"Welcome students. Remember their shoes. Remind SR/IN/JR shoe arrangements."},
+          {icon:"🚗",title:"Auto Gate",warn:"Press doorbell IMMEDIATELY for visitors",body:"Greet warmly. Sanitise hands. Send crying kids first."},
+          {icon:"↩️",title:"U-Turn Platform",warn:"X-Ray Students",body:"Control prefects. Send crying kids first."},
+          {icon:"📞",title:"Reception",warn:"Alert for Visitors",body:"Ready for emergency cases and MISC handling. Walk around to observe — check if anyone needs help or if any situation requires attention."},
+          {icon:"🎬",title:"Hall Teacher",warn:"Set Up Projector",body:"Welcome students. Instruct to gather at hall. Ready for assembly. No students in classrooms."},
+        ]
+      },
+      {
+        time:"8:10am",label:"Duty Active",color:"#854F0B",bg:"#FFF8E1",border:"#F9CB42",
+        note:"Stay alert. Do not leave station without replacement.",
+        items:[
+          {icon:"😢",title:"Crying Kids Protocol",warn:"TOP PRIORITY",body:"Send crying kids to class FIRST above all other duties. Never leave a crying child unattended."},
+          {icon:"⚠️",title:"MISC Alert",body:"Spot any sick, injured, or unusual students → Report to MGMT Central Control immediately."},
+          {icon:"👋",title:"Visitor Alert",body:"Any visitor at gate → Press doorbell IMMEDIATELY. Receive at reception only."},
+        ]
+      },
+      {
+        time:"8:40am",label:"Duty Ends · Class Starts",color:"#5B35C4",bg:"#F4F0FF",border:"#C5B3F5",
+        items:[
+          {icon:"🏫",title:"WITH scheduled class",body:"Return to classroom on time."},
+          {icon:"📋",title:"WITHOUT scheduled class",body:"Head to Reception and check in with MGMT — see if there's anything you can help with, and feel free to share anything you need support with too."},
+          {icon:"🚪",title:"Reception Duty",body:"Open gate. Record late comers. Welcome late students and parents."},
+        ]
+      },
+    ],
+    age:{
+      jr:{tips:["JR may cry - always send crying kids first","Hold their hand, walk to class with them","Extra warmth in the morning","Keep parent handover brief"],goal:"Students enter calmly, feel safe and welcomed"},
+      in_:{tips:["Guide to correct areas independently","Encourage greetings to teachers and friends","Quick bag/bottle/shoes check","Build morning habit"],goal:"Students follow routine independently, arrive cheerfully"},
+      sr:{tips:["Assign prefect duties clearly","Model good behaviour for JR and IN","Efficient movement to hall"],goal:"Prefect duties done well, sets positive tone for whole school"},
+    },
+    warns:["CRYING KIDS = TOP PRIORITY at every station","VISITOR = Press doorbell IMMEDIATELY","MISC students = Report to MGMT immediately","Ready Class must be done by 7:58am"],
+    steps:[],
+  },
+
+  dismissal:{id:'dismissal',n:13,name:'Changing of Slot & Dismissal',nameZh:'End of Class & Departure',icon:'🏡',when:'END OF DAY',cat:'end',
+    stepGroups:[
+      {groupTitle:"🔄 Changing of Slot",color:"#185FA5",bg:"#EEF5FF",border:"#AABDD4",steps:[
+        {n:1,title:"Tidy Up & Sit Properly",do_:'Ensure all students are seated properly. Desks cleared and ready for the next lesson.'},
+        {n:2,title:"Goodbye Chant",do_:'Lead the chant:<br>Teacher: "Clap clap — thank you children!"<br>Students: "Clap clap — thank you Teacher!"'},
+        {n:3,title:"Wait for Next Teacher",warn:"Junior classes — do NOT dismiss early",do_:'Do NOT dismiss students until the next teacher has entered the classroom — especially for younger classes.'},
+        {n:4,title:"Hand Over",do_:"Hand over to next teacher / dismiss to next activity."},
+      ]},
+      {groupTitle:"🏡 Dismissal",color:"#A32D2D",bg:"#FCEBEB",border:"#F09595",steps:[
+        {n:1,title:"10 Min Before — Washroom",do_:'START 10 minutes before dismissal time. Call for washroom.'},
+        {n:2,title:"Check Your Table",do_:'"Check your table! Check your water bottle? Check your food container? Anything left?"'},
+        {n:3,title:"Check Drying Area",do_:"Check drying area — handle any wet or dry uniform."},
+        {n:4,title:"School Bag",do_:'"Carry your school bag!"'},
+        {n:5,title:"Shoes",do_:'"Take your shoes. Hold in your hand!"'},
+        {n:6,title:"Line Up",do_:'"Line up please."<br>Half day — 1 line. Full day — separate lines.'},
+        {n:7,title:"Goodbye Chant",do_:'Lead the goodbye chant:<br>Teacher: "Thank you children! Goodbye children!"<br>Students: "Thank you Teacher! Goodbye Teacher!"<br>All: "See you tomorrow!"'},
+      ]},
+    ],
+    steps:[],
+    age:{
+      jr:{tips:['CHECK desk FOR them — point to each item individually','PUT school bag ON for them, adjust BOTH straps','GO to shoe area WITH them, find THEIR shoes, TIE laces FOR them','GUIDE to correct line — half/full day','Wave and smile warmly at every student'],goal:'Nothing left behind (teacher checked), bag properly worn, in correct line, happy farewell'},
+      in_:{tips:['GUIDE checking: "Look at your desk, what do you need to take?"','CHECK both straps on school bag','HELP tie laces if needed','GUIDE lining up clearly: half/full day, boys/girls'],goal:'Can check mostly alone, wears bag independently, knows correct line, polite goodbye'},
+      sr:{tips:['BRIEF reminder: "Check your desk" once only','Quick check on school bag — both straps','MONITOR — should be fully independent','EXPECT: help younger students as role model'],goal:'Complete self-check, never forgets items, efficient process, sets positive example for others'},
+    },
+    warns:['⏰ Start desk check 10 minutes before dismissal time','⚠️ Student frequently forgets items → Inform parents (pattern concern)','💡 Positive, warm farewell = students excited and happy to return next class'],
+  },
+};
+
+const SOP_LIST = Object.values(SOP_DATA);
+
+// ══════════════════════════════════════════════════════════════
+// TRAINING STRUCTURE — STAGES & TASKS
+// ══════════════════════════════════════════════════════════════
+const STAGES=[
+  {id:1,name:'Stage 1',nameZh:'Establishing Basics',days:[1,2],theme:'Observe & Learn'},
+  {id:2,name:'Stage 2',nameZh:'Co-Teaching',days:[3,4],theme:'Co-Teaching: Gradual Responsibility'},
+  {id:3,name:'Stage 3',nameZh:'Mirror Teaching',days:[6,7],theme:'Mirror Teaching Begins'},
+  {id:4,name:'Stage 4',nameZh:'Independent Teaching',days:[8,9],theme:'Lesson Planning & Independence'},
+  {id:5,name:'Stage 5',nameZh:'Full Independence',days:[11,12,13,14],theme:'Full Independence'},
+];
+const ALL_DAYS=[1,2,3,4,6,7,8,9,11,12,13,14];
+function getStageForDay(d){return STAGES.find(s=>s.days.includes(d))||STAGES[0];}
+
+const TASKS={
+  mentor:{
+    1:[
+      {id:'m1_1',tag:'teach',text:'Demo effective teaching — show proper strategies & classroom management',sops:['flash','book','attendance']},
+      {id:'m1_2',tag:'teach',text:'Explain EVERY step — WHY you do each thing, reasoning behind methods',sops:[]},
+      {id:'m1_3',tag:'teach',text:'Show Gentle-but-Firm approach — model positive language and discipline',sops:[]},
+      {id:'m1_4',tag:'doc',text:'Check mentee\'s activity logs — review and give feedback daily',sops:[]},
+      {id:'m1_5',tag:'doc',text:'Report mentee progress to MGMT',sops:[]},
+    ],
+    2:[
+      {id:'m2_1',tag:'teach',text:'Continue demo teaching — 2nd day observation slot',sops:['flash','book','spelling']},
+      {id:'m2_2',tag:'teach',text:'Model how to handle individual student needs and behaviour',sops:['indread']},
+      {id:'m2_3',tag:'doc',text:'Review mentee\'s activity logs — provide written feedback',sops:[]},
+      {id:'m2_4',tag:'doc',text:'Report Stage 1 completion status to MGMT',sops:[]},
+    ],
+    3:[
+      {id:'m3_1',tag:'teach',text:'Demo teaching — gradually pass responsibility for routines to mentee',sops:['attendance','washroom','recess']},
+      {id:'m3_2',tag:'teach',text:'Provide IMMEDIATE feedback on mentee\'s routine management',sops:[]},
+      {id:'m3_3',tag:'teach',text:'Guide mentee on marking — show standards, demonstrate corrections',sops:['spelling','copyboard']},
+      {id:'m3_4',tag:'doc',text:'Double-check mentee\'s marking attempts',sops:[]},
+      {id:'m3_5',tag:'doc',text:'Document strengths & areas for growth — report to MGMT daily',sops:[]},
+    ],
+    4:[
+      {id:'m4_1',tag:'teach',text:'Continue demo + correct on the spot — re-demo if needed',sops:['flash','book']},
+      {id:'m4_2',tag:'teach',text:'Verify mentee independently handles all routines',sops:['attendance','washroom','recess']},
+      {id:'m4_3',tag:'teach',text:'Guide on marking standards — double-check all attempts',sops:['spelling','indread']},
+      {id:'m4_4',tag:'doc',text:'Record: routines handled independently vs needing help',sops:[]},
+    ],
+    6:[
+      {id:'m6_1',tag:'teach',text:'1st Slot DEMO: Teach normally. Explain MISC recording (whiteboard). Show incident reporting.',sops:['flash','book','spelling']},
+      {id:'m6_2',tag:'teach',text:'Emphasise individual student needs and discipline strategies',sops:['indread','activity']},
+      {id:'m6_3',tag:'teach',text:'2nd Slot SUPERVISE: Observe mentee mirror-teach — reduce intervention',sops:[]},
+      {id:'m6_4',tag:'must',text:'⚠️ ONLY step in if CRITICAL. Correct AFTER class, never during.',sops:[]},
+      {id:'m6_5',tag:'doc',text:'Record mirror teaching performance — constructive feedback daily',sops:[]},
+    ],
+    7:[
+      {id:'m7_1',tag:'teach',text:'1st Slot DEMO: Reinforce discipline strategies + MISC recording',sops:['summary','dismissal']},
+      {id:'m7_2',tag:'teach',text:'2nd Slot SUPERVISE: Mentee mirror-teaches full class independently',sops:[]},
+      {id:'m7_3',tag:'must',text:'⚠️ Confirm mentee\'s MISC whiteboard recording is correct',sops:[]},
+      {id:'m7_4',tag:'doc',text:'Report Stage 3 completion status to MGMT — ready to advance?',sops:[]},
+    ],
+    8:[
+      {id:'m8_1',tag:'teach',text:'1st Slot GUIDE: Demo teaching + teach Lesson Plan writing format',sops:['flash','book']},
+      {id:'m8_2',tag:'teach',text:'Teach Day Report writing — explain all 5 sections and format',sops:[]},
+      {id:'m8_3',tag:'teach',text:'2nd Slot OBSERVE: Reduce intervention — only assist if truly needed',sops:[]},
+      {id:'m8_4',tag:'doc',text:'Review mentee\'s first Lesson Plan draft — detailed feedback',sops:[]},
+      {id:'m8_5',tag:'doc',text:'Schedule reflection session — discuss successes and challenges',sops:[]},
+    ],
+    9:[
+      {id:'m9_1',tag:'teach',text:'1st Slot GUIDE: Check lesson plan, set growth goals',sops:[]},
+      {id:'m9_2',tag:'teach',text:'2nd Slot OBSERVE: Only assist if truly needed',sops:[]},
+      {id:'m9_3',tag:'doc',text:'Review Day Report quality — all 5 sections complete and correct?',sops:[]},
+      {id:'m9_4',tag:'doc',text:'Report Stage 4 completion status to MGMT — ready for full independence?',sops:[]},
+    ],
+    11:[
+      {id:'m11_1',tag:'obs',text:'Observe periodically — NOT constantly. Check lesson plan quality.',sops:[]},
+      {id:'m11_2',tag:'obs',text:'Review Day Reports — all sections complete and accurate?',sops:[]},
+      {id:'m11_3',tag:'doc',text:'Monitor student progress across both slots',sops:[]},
+      {id:'m11_4',tag:'doc',text:'Available for questions — be reachable and supportive, not hovering',sops:[]},
+    ],
+    12:[{id:'m12_1',tag:'obs',text:'Spot-check lesson plans and day reports for quality',sops:[]},{id:'m12_2',tag:'doc',text:'Provide constructive feedback — strengths + areas to improve',sops:[]},{id:'m12_3',tag:'doc',text:'Help with any difficult student situations if needed',sops:[]},],
+    13:[{id:'m13_1',tag:'obs',text:'Confirm mentee teaches BOTH slots at mentor-level quality',sops:[]},{id:'m13_2',tag:'doc',text:'Review documentation completeness and accuracy',sops:[]},{id:'m13_3',tag:'doc',text:'Report final assessment to MGMT — ready for official confirmation?',sops:[]},],
+    14:[{id:'m14_1',tag:'obs',text:'Final observation — confirm standards met consistently',sops:[]},{id:'m14_2',tag:'doc',text:'Complete final training evaluation report for MGMT',sops:[]},{id:'m14_3',tag:'must',text:'⭐ Formal handover — mentee officially takes on the role',sops:[]},],
+  },
+  mentee:{
+    1:[
+      {id:'t1_0',tag:'must',text:'READ Staff Handbook — About Us, Core Message, What Makes Us Special, Code of Conduct. Tap 🏫 Handbook in the menu.',sops:[],handbook:true},
+      {id:'t1_1',tag:'obs',text:'OBSERVE mentor demo — both slots. Watch EVERY detail of teaching strategies and classroom management.',sops:['flash','book','attendance','washroom']},
+      {id:'t1_2',tag:'doc',text:'RECORD everything in Activity Log — all lesson steps, what mentor says/does, student reactions.',sops:[]},
+      {id:'t1_3',tag:'obs',text:'LEARN standard lesson plan structure — read SOP, study structure, ask about unclear parts.',sops:['flash','book','spelling']},
+      {id:'t1_4',tag:'teach',text:'ASSIST as academic assistant — help with Individual Reading, writing exercises, matching activities.',sops:['indread']},
+      {id:'t1_5',tag:'must',text:'⚠️ NO marking allowed at this stage — observation and assistance ONLY.',sops:[]},
+    ],
+    2:[
+      {id:'t2_1',tag:'obs',text:'OBSERVE mentor demo — both slots. Continue detailed observation.',sops:['spelling','copyboard','recess']},
+      {id:'t2_2',tag:'doc',text:'Complete Activity Log — more detail = better learning. Note all key strategies.',sops:[]},
+      {id:'t2_3',tag:'obs',text:'Identify and write: 3 things mentor does well that you want to copy.',sops:[]},
+      {id:'t2_4',tag:'obs',text:'Prepare questions for mentor — NEVER guess. Always ask!',sops:[]},
+    ],
+    3:[
+      {id:'t3_1',tag:'teach',text:'TAKE CHARGE of ALL routines: ✓ Attendance ✓ Water break ✓ Washroom supervision ✓ Recess',sops:['attendance','washroom','recess']},
+      {id:'t3_2',tag:'teach',text:'CO-TEACH Group Reading — lead the session, manage student participation.',sops:['flash','book']},
+      {id:'t3_3',tag:'doc',text:'Continue Activity Log — document own performance + mentor feedback received.',sops:[]},
+      {id:'t3_4',tag:'obs',text:'LEARN marking (guided) — observe mentor marking. Understand standards.',sops:['spelling']},
+      {id:'t3_5',tag:'must',text:'⚠️ Still NO independent marking — mentor guides, you observe only.',sops:[]},
+    ],
+    4:[
+      {id:'t4_1',tag:'teach',text:'Independently manage ALL routines without reminders — attendance, water, washroom, recess.',sops:['attendance','washroom','recess']},
+      {id:'t4_2',tag:'teach',text:'Lead Group Reading session confidently — same methods as mentor showed.',sops:['flash','book']},
+      {id:'t4_3',tag:'doc',text:'Activity Log: record what you managed independently vs needed help.',sops:[]},
+      {id:'t4_4',tag:'obs',text:'LEARN marking (guided) — mentor double-checks your attempts.',sops:['spelling','copyboard']},
+    ],
+    6:[
+      {id:'t6_1',tag:'obs',text:'1st Slot OBSERVE: Watch mentor demo carefully. Take detailed notes. Continue routine management.',sops:['flash','book','spelling']},
+      {id:'t6_2',tag:'teach',text:'2nd Slot MIRROR TEACH: FULL teaching responsibility — copy mentor EXACTLY (same words, tone, methods).',sops:['flash','book','copyboard','indread']},
+      {id:'t6_3',tag:'must',text:'⚠️ Mirror teaching = ABSOLUTE FIDELITY. No improvisation — not yet!',sops:[]},
+      {id:'t6_4',tag:'teach',text:'Try marking (ask if unsure — mentor double-checks everything).',sops:['spelling']},
+      {id:'t6_5',tag:'doc',text:'LEARN MISC whiteboard recording — learn to report incidents in group chat.',sops:[]},
+    ],
+    7:[
+      {id:'t7_1',tag:'obs',text:'1st Slot OBSERVE: Watch mentor. Take notes. Continue routine management.',sops:[]},
+      {id:'t7_2',tag:'teach',text:'2nd Slot MIRROR TEACH: Full class independently — maintain classroom management.',sops:['activity','summary','dismissal']},
+      {id:'t7_3',tag:'doc',text:'Record MISC on whiteboard correctly — report any incidents in group chat.',sops:[]},
+      {id:'t7_4',tag:'doc',text:'Activity Log: note own performance, what went well, areas to improve.',sops:[]},
+    ],
+    8:[
+      {id:'t8_1',tag:'obs',text:'1st Slot OBSERVE & LEARN: Watch demo. Learn Lesson Plan writing. Learn Day Report format.',sops:[]},
+      {id:'t8_2',tag:'teach',text:'2nd Slot MIRROR TEACH: Full responsibility — apply lesson planning knowledge.',sops:['flash','book','spelling','copyboard']},
+      {id:'t8_3',tag:'doc',text:'WRITE your first Lesson Plan (guided) — use mentor\'s structure and format.',sops:[]},
+      {id:'t8_4',tag:'doc',text:'WRITE your first Day Report (guided) — all 5 sections complete.',sops:[]},
+      {id:'t8_5',tag:'doc',text:'Report MISC in group chat using proper incident reporting format.',sops:[]},
+    ],
+    9:[
+      {id:'t9_1',tag:'obs',text:'1st Slot OBSERVE: Watch mentor. Set personal growth goals for today.',sops:[]},
+      {id:'t9_2',tag:'teach',text:'2nd Slot MIRROR TEACH: Full responsibility. Apply lesson planning independently.',sops:['indread','activity','summary']},
+      {id:'t9_3',tag:'doc',text:'Submit Day Report — all 5 sections, on time, complete.',sops:[]},
+      {id:'t9_4',tag:'doc',text:'Reflect: what worked today? What needs improvement tomorrow?',sops:[]},
+    ],
+    11:[
+      {id:'t11_1',tag:'teach',text:'BOTH SLOTS: Full teaching responsibility — prepare lesson plans INDEPENDENTLY.',sops:['flash','book','spelling','copyboard','indread']},
+      {id:'t11_2',tag:'teach',text:'Manage ALL classroom activities. Mark student work properly.',sops:['activity','summary']},
+      {id:'t11_3',tag:'doc',text:'Write Day Report — all 5 sections. Submit on time.',sops:[]},
+      {id:'t11_4',tag:'doc',text:'Record MISC accurately — report in group chat if any incidents.',sops:['dismissal']},
+    ],
+    12:[{id:'t12_1',tag:'teach',text:'BOTH SLOTS full responsibility — quality must match mentor level.',sops:[]},{id:'t12_2',tag:'teach',text:'Handle problems independently first — seek help only when truly needed.',sops:[]},{id:'t12_3',tag:'doc',text:'Complete lesson plan in advance. Submit Day Report on time.',sops:[]},],
+    13:[{id:'t13_1',tag:'teach',text:'BOTH SLOTS full responsibility — maintain all standards consistently.',sops:[]},{id:'t13_2',tag:'doc',text:'All documentation complete: lesson plans, day report, MISC recording.',sops:[]},{id:'t13_3',tag:'teach',text:'Build student relationships — students should recognise and respond to you as their teacher.',sops:[]},],
+    14:[{id:'t14_1',tag:'teach',text:'BOTH SLOTS: Final confirmation day — demonstrate full competency.',sops:[]},{id:'t14_2',tag:'doc',text:'All documentation complete and accurate.',sops:[]},{id:'t14_3',tag:'must',text:'⭐ Officially take on the role — this is YOUR classroom now!',sops:[]},],
+  },
+};
+
+// ══════════════════════════════════════════════════════════════
+// SKILL CONFIRMATION — Rich 5-Stage Supervision Structure
+// Each stage: checkbox + understanding probe + conditional text
+// ══════════════════════════════════════════════════════════════
+
+// Stage labels and risk descriptions
+const STAGE_META={
+  1:{label:'Observe & Learn',risk:'Watching ≠ Understanding'},
+  2:{label:'Co-Teaching',risk:'Doing ≠ Doing Correctly'},
+  3:{label:'Mirror Teaching',risk:'Self-adapted ≠ Mirror'},
+  4:{label:'Lesson Planning',risk:'Planned ≠ Executed'},
+  5:{label:'Full Independence',risk:'Appeared Independent ≠ Truly Independent'},
+};
+
+// Per-stage, per-role confirmation config
+// Each SOP block: { check, probe, probeOptions, flagOn }
+// probeOptions: array of {val, label, warn, requireNote}
+const SKILL_STAGES={
+  1:{
+    mentor:{
+      check:"I demonstrated this SOP clearly to Mentee today",
+      probe:"Mentee's understanding level after my demo:",
+      options:[
+        {val:'clear', label:"✅ Clearly understood — no follow-up needed"},
+        {val:'partial', label:"⚠️ Partially understood — I followed up", requireNote:true, notePlaceholder:"What was unclear? How did you follow up?"},
+        {val:'poor', label:"❌ Did not understand — needs re-demo tomorrow", requireNote:true, notePlaceholder:"Describe the gap. What will you re-demo?", warn:"MGMT alert will be triggered if this continues."},
+      ],
+    },
+    mentee:{
+      check:"I observed Mentor performing this step-by-step",
+      probe:"Can you describe the key steps in your own words?",
+      options:[
+        {val:'yes', label:"✅ Yes — I can explain it confidently"},
+        {val:'unsure', label:"⚠️ I watched but I'm not fully sure", warn:"Please speak to your Mentor before end of class today."},
+        {val:'questions', label:"❓ I have questions I need answered", requireNote:true, notePlaceholder:"Write your question here — Mentor will see this.", warn:"Good job asking! Your Mentor will receive this question."},
+      ],
+    },
+  },
+  2:{
+    mentor:{
+      check:"I handed over this routine for Mentee to manage",
+      probe:"Mentee's execution quality:",
+      options:[
+        {val:'correct', label:"✅ Correct — no intervention needed"},
+        {val:'minor', label:"⚠️ Minor errors — I corrected on the spot", requireNote:true, notePlaceholder:"What error? How did you correct it?"},
+        {val:'major', label:"❌ Major errors — needs re-demo", requireNote:true, notePlaceholder:"Describe the errors specifically.", warn:"MGMT alert will be triggered if major errors persist."},
+      ],
+    },
+    mentee:{
+      check:"I managed this routine independently today",
+      probe:"How did the execution go?",
+      options:[
+        {val:'smooth', label:"✅ Smooth — no issues"},
+        {val:'minor', label:'⚠️ Had minor issues, Mentor corrected me', requireNote:true, notePlaceholder:"What happened? What did you learn from it?"},
+        {val:'struggled', label:"❌ Struggled — I need more practice", requireNote:true, notePlaceholder:"What specifically was hard?", warn:"Flag sent to Mentor. More practice needed before advancing."},
+      ],
+    },
+  },
+  3:{
+    mentor:{
+      check:"Mentee used this in the 2nd slot today",
+      probe:'Mirror fidelity level:',
+      options:[
+        {val:'absolute', label:"✅ Absolute fidelity — same words, tone, sequence"},
+        {val:'minor', label:"⚠️ Minor deviation — acceptable at this stage", requireNote:true, notePlaceholder:"What was different? Was it intentional?"},
+        {val:'significant', label:"❌ Significant deviation — not acceptable", requireNote:true, notePlaceholder:"Describe the deviation clearly.", warn:"Mirror fidelity failure. MGMT will be alerted if this repeats."},
+      ],
+    },
+    mentee:{
+      check:"I used this step in the 2nd slot today",
+      probe:"Did you mirror exactly?",
+      options:[
+        {val:'exact', label:"✅ Yes — same words, tone, and sequence as Mentor"},
+        {val:'adapted', label:"⚠️ I adapted some parts", requireNote:true, notePlaceholder:"What did you change and why?", warn:"Note: At Stage 3, mirror = copy exactly. No improvisation yet."},
+        {val:'skipped', label:"❌ I skipped this step", requireNote:true, notePlaceholder:"Why was it skipped?", warn:"Skipping steps will be flagged to Mentor and MGMT."},
+      ],
+    },
+  },
+  4:{
+    mentor:{
+      check:"This step is in Mentee's lesson plan for today",
+      probe:"Did Mentee execute it in class as planned?",
+      options:[
+        {val:'executed', label:"✅ Executed as planned — good quality"},
+        {val:'partial', label:"⚠️ Executed but quality needs work", requireNote:true, notePlaceholder:'What needs improvement specifically?'},
+        {val:'notexecuted', label:"❌ Not executed or major gap from plan", requireNote:true, notePlaceholder:"What happened? Why was it not executed?", warn:"Plan-execution gap flagged. MGMT alert triggered."},
+      ],
+    },
+    mentee:{
+      check:"This step is in my lesson plan for today",
+      probe:"Did you actually execute it in class?",
+      options:[
+        {val:'yes', label:"✅ Yes — executed as planned"},
+        {val:'different', label:"⚠️ Executed but differently from plan", requireNote:true, notePlaceholder:"What was different from your plan?"},
+        {val:'no', label:"❌ Did not execute", requireNote:true, notePlaceholder:"Why was it not done? What will you do next class?", warn:"Not executing planned steps will be flagged to Mentor."},
+      ],
+    },
+  },
+  5:{
+    mentor:{
+      check:"I did NOT intervene during Mentee's teaching of this step",
+      probe:'True independence level:',
+      options:[
+        {val:'full', label:"✅ Fully independent — zero assistance from me"},
+        {val:'questions', label:"⚠️ Asked me 1–2 questions — acceptable at this stage", requireNote:true, notePlaceholder:"What did they ask? Is this a pattern?"},
+        {val:'dependent', label:"❌ Still dependent on my support", requireNote:true, notePlaceholder:"Describe the dependency.", warn:"⚠️ CRITICAL: Stage 5 dependency triggers immediate MGMT review."},
+      ],
+    },
+    mentee:{
+      check:"I taught this step independently — no assistance from Mentor",
+      probe:"Level of independence today:",
+      options:[
+        {val:'full', label:"✅ Fully independent — did not need Mentor at all"},
+        {val:'questions', label:"⚠️ Asked Mentor once — minor clarification only", requireNote:true, notePlaceholder:"What did you ask? How will you handle it alone next time?"},
+        {val:'help', label:"❌ Needed significant help from Mentor", requireNote:true, notePlaceholder:"What help did you need?", warn:"Significant dependency at Stage 5 will be escalated to MGMT."},
+      ],
+    },
+  },
+};
+
+// SOPs to master per stage — from Training Progress Chart
+const STAGE_SOPS={
+  1:['attendance','washroom','flash','book','indread'],
+  2:['attendance','washroom','recess','flash','book','spelling'],
+  3:['flash','book','spelling','copyboard','indread','activity'],
+  4:['summary','dismissal','copyboard','activity'],
+  5:['hygiene','bookcollect','attendance','washroom','recess','flash','book','spelling','copyboard','indread','activity','summary','dismissal'],
+};
+
+const SUCCESS_CRITERIA={
+  1:{mentor:'Mentee completes detailed activity logs, understands lesson structure, asks relevant questions',mentee:'Complete all observation logs, understand lesson plan structure, identify key teaching steps'},
+  2:{mentor:'Mentee independently manages ALL routines, leads Group Reading effectively',mentee:'Independently manage all daily routines, lead Group Reading effectively'},
+  3:{mentor:'Mentee mirrors teaching with ABSOLUTE FIDELITY in 2nd slot, understands MISC recording',mentee:'Mirror teach with ABSOLUTE FIDELITY in 2nd slot, manage classroom independently'},
+  4:{mentor:'Mentee writes basic lesson plan & day report, teaches independently in 2nd slot',mentee:'Write basic lesson plan & day report, teach independently in 2nd slot'},
+  5:{mentor:'Both slots taught independently, lesson plans & day reports meet quality standards',mentee:'Teach both slots independently, meet quality standards, effective classroom management'},
+};
+
+// ══════════════════════════════════════════════════════════════
+// STATE & PERSISTENCE
+// ══════════════════════════════════════════════════════════════
+const APP_VERSION='v5';
+const S={role:null,cohortId:null,cohorts:[],reports:[],taskChecks:{},passwords:[]};
+
+function saveAll(){
+  localStorage.setItem('srk_training_v3',JSON.stringify({cohorts:S.cohorts,reports:S.reports,taskChecks:S.taskChecks,passwords:S.passwords}));
+  const f=document.getElementById('savedFlash');f.style.opacity='1';setTimeout(()=>f.style.opacity='0',1400);
+}
+function loadData(){
+  const raw=localStorage.getItem('srk_training_v3');if(!raw)return;
+  try{const p=JSON.parse(raw);if(p.cohorts)S.cohorts=p.cohorts;if(p.reports)S.reports=p.reports;if(p.taskChecks)S.taskChecks=p.taskChecks;if(p.passwords)S.passwords=p.passwords;}catch(e){}
+}
+
+// ══════════════════════════════════════════════════════════════
+// ROLE & AUTH — PASSWORD-BASED
+// ══════════════════════════════════════════════════════════════
+
+// SYSTEM passwords — hardcoded, visible in Admin > Password Management
+// To change system passwords, edit SYSTEM_PASSWORDS below directly in code.
+const SYSTEM_PASSWORDS=[
+  {pass:'mgmt2026',    role:'mgmt',   label:'Management Access',  type:'system'},
+  {pass:'guide445566', role:'mentor', label:'Mentor Access',       type:'system'},
+  {pass:'new112233',   role:'mentee', label:'New Teacher Access',  type:'system'},
+];
+
+function loginWithPassword(){
+  const input=document.getElementById('loginPwInput');
+  const pw=(input?.value||'').trim();
+  if(!pw)return;
+  // Check system passwords
+  let matched=SYSTEM_PASSWORDS.find(p=>p.pass===pw);
+  // Check local passwords stored in S
+  if(!matched)matched=S.passwords.find(p=>p.pass===pw);
+  const errEl=document.getElementById('loginError');
+  if(!matched){
+    if(errEl)errEl.style.display='block';
+    input.style.borderColor='var(--red)';
+    input.value='';
+    setTimeout(()=>{if(errEl)errEl.style.display='none';input.style.borderColor='var(--bdr)';},3000);
+    return;
+  }
+  if(errEl)errEl.style.display='none';
+  selectRole(matched.role);
+}
+
+function selectRole(role){
+  S.role=role;
+  document.getElementById('loginScreen').style.display='none';
+  document.getElementById('mainApp').style.display='block';
+  const labels={mgmt:'🏫 MGMT',mentor:'👨‍🏫 Mentor',mentee:'🎓 New Teacher'};
+  const cls={mgmt:'role-mgmt',mentor:'role-mentor',mentee:'role-mentee'};
+  const b=document.getElementById('roleBadgeTop');
+  b.textContent=labels[role];b.className='role-badge '+cls[role];
+  document.getElementById('tab-mgmt').style.display=(role==='mgmt')?'':'none';
+  const vEl=document.getElementById('topbarVer');if(vEl)vEl.textContent=APP_VERSION;
+  if((role==='mentor'||role==='mentee')&&S.cohorts.length===1)S.cohortId=S.cohorts[0].id;
+  const input=document.getElementById('loginPwInput');
+  if(input)input.value='';
+  goPage('dashboard');
+}
+
+function logout(){
+  S.role=null;S.cohortId=null;
+  document.getElementById('loginScreen').style.display='flex';
+  document.getElementById('mainApp').style.display='none';
+}
+
+// ══════════════════════════════════════════════════════════════
+// NAVIGATION
+// ══════════════════════════════════════════════════════════════
+const PAGE_MAP={dashboard:0,tasks:1,report:2,progress:3,sop:4,handbook:5,mgmt:6};
+function goPage(p){
+  // Access control — only MGMT can access Admin page
+  if(p==='mgmt'&&S.role!=='mgmt'){goPage('dashboard');return;}
+  document.querySelectorAll('.page').forEach(el=>el.classList.remove('on'));
+  document.querySelectorAll('.ntab').forEach(el=>el.classList.remove('on'));
+  const pg=document.getElementById('page-'+p);if(pg)pg.classList.add('on');
+  const tabs=document.querySelectorAll('.ntab');
+  if(tabs[PAGE_MAP[p]])tabs[PAGE_MAP[p]].classList.add('on');
+  if(p==='dashboard')renderDashboard();
+  if(p==='tasks')renderTasks();
+  if(p==='report')renderReport();
+  if(p==='progress')renderProgress();
+  if(p==='sop')renderSopLibrary();
+  if(p==='handbook')renderHandbook();
+  if(p==='mgmt')renderMgmt();
+}
+
+// ══════════════════════════════════════════════════════════════
+// HELPERS
+// ══════════════════════════════════════════════════════════════
+function getCohort(id){return S.cohorts.find(c=>c.id===(id||S.cohortId));}
+function getTodayISO(){return new Date().toISOString().slice(0,10);}
+function fmtDate(ds){if(!ds)return'—';return new Date(ds+'T12:00:00').toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});}
+function genId(p){return p+'_'+Date.now()+'_'+Math.random().toString(36).slice(2,5);}
+function getReport(cid,role,day){return S.reports.find(r=>r.cohortId===cid&&r.role===role&&r.day===day);}
+function getDayLabel(d){const m={1:'D1',2:'D2',3:'D3',4:'D4',6:'D6',7:'D7',8:'D8',9:'D9',11:'D11',12:'D12',13:'D13',14:'D14'};return m[d]||'D'+d;}
+function stageProgress(cohort){
+  if(!cohort)return{stage:1,pct:0};
+  const day=cohort.currentDay||1;const stage=getStageForDay(day);
+  const idx=ALL_DAYS.indexOf(day);const pct=Math.round(((idx+1)/ALL_DAYS.length)*100);
+  return{stage:stage.id,pct};
+}
+function tagBadge(tag){
+  const m={must:'tag-must',doc:'tag-doc',obs:'tag-obs',teach:'tag-teach'};
+  const l={must:'CRITICAL',doc:'RECORD',obs:'OBSERVE',teach:'TEACH'};
+  return`<span class="task-tag ${m[tag]||'tag-obs'}">${l[tag]||tag.toUpperCase()}</span>`;
+}
+function checkKey(cid,role,day,tid){return`${cid}_${role}_${day}_${tid}`;}
+function countChecked(cid,role,day){
+  const tasks=(TASKS[role]||{})[day]||[];
+  return tasks.filter(t=>S.taskChecks[checkKey(cid,role,day,t.id)]).length;
+}
+
+// ══════════════════════════════════════════════════════════════
+// SOP MODAL
+// ══════════════════════════════════════════════════════════════
+function openSopModal(sopId){
+  const sop=SOP_DATA[sopId];if(!sop)return;
+  const catLabel={morning:'Before Class',monday:'Monday Only',daily:'Every Day',teaching:'Teaching Activity',closing:'Closing',end:'End of Day'};
+  const catCls={morning:'cat-morning',monday:'cat-monday',daily:'cat-daily',teaching:'cat-teaching',closing:'cat-closing',end:'cat-end'};
+
+  // Timeline SOPs render differently
+  let stepsHtml='';
+  if(sop.stepGroups&&sop.stepGroups.length){
+    stepsHtml=sop.stepGroups.map(grp=>`
+      <div style="margin-bottom:18px">
+        <div style="display:inline-flex;align-items:center;gap:8px;margin-bottom:10px;padding:6px 14px;background:${grp.bg};border:.5px solid ${grp.border};border-radius:20px">
+          <span style="font-size:13px;font-weight:800;color:${grp.color}">${grp.groupTitle}</span>
+        </div>
+        <div style="position:relative;padding-left:24px">
+          <div style="position:absolute;left:10px;top:0;bottom:0;width:2px;background:${grp.border};border-radius:2px"></div>
+          ${grp.steps.map(s=>`
+            <div style="position:relative;margin-bottom:8px">
+              <div style="position:absolute;left:-24px;top:10px;width:18px;height:18px;border-radius:50%;background:${grp.color};display:flex;align-items:center;justify-content:center;font-size:8px;color:#fff;font-weight:700;z-index:1">${s.n}</div>
+              <div style="border:.5px solid ${grp.border};border-radius:8px;padding:10px 12px;background:var(--sur)">
+                ${s.title?`<div style="font-weight:700;font-size:12px;margin-bottom:3px">${s.title}</div>`:''}
+                <div style="font-size:12px;line-height:1.6;color:var(--txt)">${s.do_}</div>
+              </div>
+            </div>`).join('')}
+        </div>
+      </div>`).join('');
+  } else if(sop.timeline&&sop.timeline.length){
+    stepsHtml=`<div style="position:relative;padding-left:24px">
+      <div style="position:absolute;left:10px;top:0;bottom:0;width:2px;background:var(--bdr);border-radius:2px"></div>
+      ${sop.timeline.map((block,bi)=>`
+        <div style="position:relative;margin-bottom:20px">
+          <!-- Time dot + label -->
+          <div style="position:absolute;left:-24px;top:2px;width:20px;height:20px;border-radius:50%;background:${block.color};display:flex;align-items:center;justify-content:center;font-size:9px;color:#fff;font-weight:700;z-index:1">${bi+1}</div>
+          <div style="display:inline-flex;align-items:center;gap:8px;margin-bottom:8px">
+            <span style="font-size:14px;font-weight:800;color:${block.color}">${block.time}</span>
+            <span style="background:${block.bg};border:.5px solid ${block.border};color:${block.color};font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;text-transform:uppercase;letter-spacing:.05em">${block.label}</span>
+          </div>
+          ${block.note?`<div style="font-size:11px;color:var(--mut);margin-bottom:8px;font-style:italic;padding:6px 10px;background:${block.bg};border-radius:6px;border-left:3px solid ${block.color}">${block.note}</div>`:''}
+          <div style="display:grid;grid-template-columns:1fr;gap:7px">
+            ${block.items.map(item=>`
+              <div style="border:.5px solid ${block.border};border-radius:8px;padding:9px 11px;background:var(--sur)">
+                <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+                  <span style="font-size:14px">${item.icon}</span>
+                  <span style="font-weight:700;font-size:11px">${item.title}</span>
+                  ${item.warn?`<span style="font-size:10px;background:#FCEBEB;color:#A32D2D;padding:4px 10px;border-radius:20px;font-weight:700;margin-left:auto;white-space:nowrap;border:.5px solid #F09595;letter-spacing:.02em">${item.warn}</span>`:''}
+                </div>
+                <div style="font-size:11px;line-height:1.55;color:var(--mut)">${item.body}</div>
+              </div>`).join('')}
+          </div>
+        </div>`).join('')}
+    </div>`;
+  } else {
+    // Group steps into blocks of ~3 for visual chunking (like timeline blocks)
+    const stepColor=catCls[sop.cat]||'cat-daily';
+    const colMap={
+      'cat-morning':'#0F6E56','cat-monday':'#854F0B','cat-daily':'#185FA5',
+      'cat-teaching':'#5B35C4','cat-closing':'#0F6E56','cat-end':'#A32D2D'
+    };
+    const bgMap={
+      'cat-morning':'#E8F7F2','cat-monday':'#FFF8E1','cat-daily':'#EEF5FF',
+      'cat-teaching':'#F4F0FF','cat-closing':'#E8F7F2','cat-end':'#FCEBEB'
+    };
+    const bdMap={
+      'cat-morning':'#9FE1CB','cat-monday':'#F9CB42','cat-daily':'#AABDD4',
+      'cat-teaching':'#C5B3F5','cat-closing':'#9FE1CB','cat-end':'#F09595'
+    };
+    const col=colMap[stepColor]||'#185FA5';
+    const bg=bgMap[stepColor]||'#EEF5FF';
+    const bd=bdMap[stepColor]||'#AABDD4';
+
+    stepsHtml=`<div style="position:relative;padding-left:24px">
+      <div style="position:absolute;left:10px;top:0;bottom:0;width:2px;background:var(--bdr);border-radius:2px"></div>
+      ${sop.steps.map((s,i)=>`
+        <div style="position:relative;margin-bottom:10px">
+          <!-- Step dot -->
+          <div style="position:absolute;left:-24px;top:10px;width:18px;height:18px;border-radius:50%;background:${s.warn?'#A32D2D':col};display:flex;align-items:center;justify-content:center;font-size:8px;color:#fff;font-weight:700;z-index:1">${s.n}</div>
+          <!-- Card -->
+          <div style="border:.5px solid ${s.warn?'#F09595':bd};border-radius:8px;padding:10px 12px;background:var(--sur)">
+            <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:${s.do_?'5px':'0'}">
+              <div style="flex:1">
+                ${s.title?`<div style="font-weight:700;font-size:12px;margin-bottom:2px">${s.title}</div>`:''}
+                ${s.do_?`<div style="font-size:12px;line-height:1.6;color:var(--txt)">${s.do_}</div>`:''}
+              </div>
+              ${s.warn?`<span style="font-size:9px;background:#FCEBEB;color:#7a1f1f;padding:2px 7px;border-radius:8px;font-weight:600;white-space:nowrap;flex-shrink:0">${s.warn.replace('⚠️ ','')}</span>`:''}
+            </div>
+          </div>
+        </div>`).join('')}
+    </div>`;
+  }
+
+  const ageHtml=`
+    <div style="margin-top:14px">
+      <div style="font-size:11px;font-weight:600;color:var(--mut);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Age-Level Approach</div>
+      <table class="age-table">
+        <thead><tr>
+          <th class="age-hdr-jr">🟠 JR (Age 4)</th>
+          <th class="age-hdr-in">🔵 IN (Age 5)</th>
+          <th class="age-hdr-sr">🟢 SR (Age 6)</th>
+        </tr></thead>
+        <tbody><tr>
+          <td class="age-jr">${sop.age.jr.tips.map(t=>`• ${t}`).join('<br>')}<br><br><em style="font-size:10px;color:var(--mut)">Goal: ${sop.age.jr.goal}</em></td>
+          <td class="age-in">${sop.age.in_.tips.map(t=>`• ${t}`).join('<br>')}<br><br><em style="font-size:10px;color:var(--mut)">Goal: ${sop.age.in_.goal}</em></td>
+          <td class="age-sr">${sop.age.sr.tips.map(t=>`• ${t}`).join('<br>')}<br><br><em style="font-size:10px;color:var(--mut)">Goal: ${sop.age.sr.goal}</em></td>
+        </tr></tbody>
+      </table>
+    </div>`;
+
+  const warnsHtml=sop.warns.length?`
+    <div style="margin-top:14px">
+      <div style="font-size:11px;font-weight:600;color:var(--mut);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Key Reminders</div>
+      ${sop.warns.map(w=>`<div class="warn-pill">${w}</div>`).join('')}
+    </div>`:'';
+
+  const ov=document.createElement('div');
+  ov.className='overlay';
+  ov.innerHTML=`<div class="modal">
+    <div class="modal-hdr">
+      <span style="font-size:20px">${sop.icon}</span>
+      <div class="modal-hdr-title">${sop.n}. ${sop.name}<br><span style="font-size:11px;font-weight:400;color:var(--mut)">${sop.nameZh}</span></div>
+      <span class="sop-cat-badge ${catCls[sop.cat]}">${catLabel[sop.cat]||sop.when}</span>
+      <button class="modal-close" onclick="this.closest('.overlay').remove()">×</button>
+    </div>
+    <div class="modal-body">
+      <div style="font-size:11px;font-weight:600;color:var(--mut);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">${sop.timeline&&sop.timeline.length?"Timeline — Time-Based Flow":"Step-by-Step Procedure"}</div>
+      ${stepsHtml}
+      ${ageHtml}
+      ${warnsHtml}
+    </div>
+    <div class="modal-foot"><button class="btn btn-pri" onclick="this.closest('.overlay').remove()">Close ×</button></div>
+  </div>`;
+  ov.addEventListener('click',e=>{if(e.target===ov)ov.remove();});
+  document.body.appendChild(ov);
+}
+
+// ══════════════════════════════════════════════════════════════
+// DASHBOARD
+// ══════════════════════════════════════════════════════════════
+function renderDashboard(){
+  const el=document.getElementById('dashboard-content');
+  if(S.role==='mgmt'){renderMgmtDashboard(el);return;}
+  const cohort=getCohort();
+  if(!cohort){
+    el.innerHTML=`<div class="card" style="text-align:center;padding:36px">
+      <div style="font-size:30px;margin-bottom:10px">🎓</div>
+      <div style="font-weight:600;margin-bottom:5px">No training cohort assigned</div>
+      <div style="color:var(--mut);font-size:12px">Please ask Management to create your training cohort.</div>
+    </div>`;return;
+  }
+  const role=S.role;const day=cohort.currentDay||1;const stage=getStageForDay(day);
+  const{pct}=stageProgress(cohort);const tasks=(TASKS[role]||{})[day]||[];
+  const checked=countChecked(cohort.id,role,day);
+  const reportDone=getReport(cohort.id,role,day);
+  const partnerRole=role==='mentor'?'mentee':'mentor';
+  const partnerReport=getReport(cohort.id,partnerRole,day);
+  const name=role==='mentor'?cohort.mentorName:cohort.menteeName;
+
+  el.innerHTML=`
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div>
+        <div style="font-size:15px;font-weight:700">Good morning, ${name||'Teacher'} 👋</div>
+        <div style="font-size:11px;color:var(--mut)">${getTodayISO()} · Day ${day} of 14 · ${stage.name}: ${stage.nameZh}</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:10px;color:var(--mut)">Cohort</div>
+        <div style="font-weight:600">${cohort.menteeName}</div>
+        ${cohort.ageGroup?`<div style="font-size:10px;color:var(--mut)">${cohort.ageGroup}</div>`:''}
+      </div>
+    </div>
+    <div class="stats">
+      <div class="stat"><div class="stat-num" style="color:var(--acc)">${day}</div><div class="stat-lbl">Training Day</div></div>
+      <div class="stat"><div class="stat-num" style="color:var(--gold)">S${stage.id}</div><div class="stat-lbl">Stage</div></div>
+      <div class="stat"><div class="stat-num" style="color:${checked===tasks.length&&tasks.length>0?'var(--grn)':'var(--acc)'}">${checked}/${tasks.length}</div><div class="stat-lbl">Tasks Done</div></div>
+      <div class="stat"><div class="stat-num" style="color:${pct===100?'var(--grn)':'var(--acc)'}">${pct}%</div><div class="stat-lbl">Progress</div></div>
+    </div>
+    <div class="card">
+      <div class="card-hdr"><span class="card-title">Training Journey</span><span class="chip chip-blue">${stage.theme}</span></div>
+      ${renderMiniTimeline(cohort)}
+      <div style="margin-top:8px">
+        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--mut);margin-bottom:3px"><span>Overall Progress</span><span>${pct}%</span></div>
+        <div class="prog-bar"><div class="prog-fill ${pct===100?'grn':''}" style="width:${pct}%"></div></div>
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="card">
+        <div class="card-hdr"><span class="card-title">📋 Today's Focus</span><button class="btn btn-pri btn-sm" onclick="goPage('tasks')">All Tasks →</button></div>
+        ${tasks.slice(0,3).map(t=>`
+          <div class="task-item ${S.taskChecks[checkKey(cohort.id,role,day,t.id)]?'done':''}">
+            <input type="checkbox" ${S.taskChecks[checkKey(cohort.id,role,day,t.id)]?'checked':''} onchange="toggleTask('${cohort.id}','${role}',${day},'${t.id}',this.checked)">
+            <span class="task-label">${tagBadge(t.tag)}${t.text}</span>
+          </div>`).join('')}
+        ${tasks.length>3?`<div style="font-size:11px;color:var(--mut);padding-top:6px">+${tasks.length-3} more tasks →</div>`:''}
+      </div>
+      <div class="card">
+        <div class="card-hdr"><span class="card-title">📊 Status</span></div>
+        ${reportDone?`<div class="alert alert-grn">✅ Your Day ${day} report submitted</div>`:`<div class="alert alert-amb">⏳ Day ${day} report not yet submitted</div>`}
+        ${partnerReport?`<div class="alert alert-grn">✅ ${partnerRole==='mentor'?'Mentor':'New Teacher'}'s report submitted</div>`:`<div class="alert alert-amb">⏳ ${partnerRole==='mentor'?'Mentor':'New Teacher'}'s report pending</div>`}
+        <div style="margin-top:10px;background:var(--sur2);border-radius:6px;padding:9px;font-size:11px;line-height:1.6;color:var(--txt)">${SUCCESS_CRITERIA[stage.id][role]}</div>
+        <button class="btn btn-pri" style="width:100%;margin-top:10px" onclick="goPage('report')">📝 Submit Today's Report</button>
+      </div>
+    </div>`;
+}
+
+function getMgmtInterventions(cohort){
+  // Returns list of skills uncleared for 2+ consecutive days
+  const flags=[];
+  const day=cohort.currentDay||1;
+  const stage=getStageForDay(day);
+  const sops=STAGE_SOPS[stage.id]||[];
+
+  sops.forEach(sopId=>{
+    const sop=SOP_DATA[sopId];if(!sop)return;
+    // Check consecutive uncleared days within current stage
+    const stageDays=stage.days.filter(d=>d<=day);
+    if(stageDays.length<2)return;
+    let consecutiveUncleared=0;
+    let lastTwo=stageDays.slice(-2);
+    lastTwo.forEach(d=>{
+      const mr=getReport(cohort.id,'mentor',d);
+      const tr=getReport(cohort.id,'mentee',d);
+      if(!mr||!tr)return;
+      const mskI=mr?.skills?.[sopId]||[false];
+      const tskI=tr?.skills?.[sopId]||[false];
+      const mProbe=mr?.probes?.[sopId]||'';
+      const tProbe=tr?.probes?.[sopId]||'';
+      // Bad probes: poor/major/significant/notexecuted/dependent/skipped/help/struggled
+      const badProbes=['poor','major','significant','notexecuted','dependent','skipped','help','struggled'];
+      const mBad=badProbes.includes(mProbe)||!mskI[0];
+      const tBad=badProbes.includes(tProbe)||!tskI[0];
+      if(mBad||tBad)consecutiveUncleared++;
+    });
+    if(consecutiveUncleared>=2){
+      flags.push({sopId,name:sop.name,icon:sop.icon,stage:stage.id,days:lastTwo});
+    }
+  });
+
+  // Also check for Mentor-flagged MGMT items
+  const mentorFlags=[];
+  ALL_DAYS.filter(d=>d<=day).forEach(d=>{
+    const mr=getReport(cohort.id,'mentor',d);
+    if(mr?.mgmtFlag&&mr.mgmtFlag.trim()){
+      mentorFlags.push({day:d,flag:mr.mgmtFlag,time:mr.submitTime});
+    }
+  });
+
+  return{skillFlags:flags,mentorFlags};
+}
+
+function renderMgmtDashboard(el){
+  const active=S.cohorts.filter(c=>c.status!=='completed');
+  const completed=S.cohorts.filter(c=>c.status==='completed');
+  const today=getTodayISO();
+  let alerts=[];
+  active.forEach(c=>{
+    const d=c.currentDay||1;
+    const mr=getReport(c.id,'mentor',d);const tr=getReport(c.id,'mentee',d);
+    if(!mr)alerts.push({type:'report',msg:`${c.menteeName}: Mentor has NOT submitted Day ${d} report`});
+    if(!tr)alerts.push({type:'report',msg:`${c.menteeName}: New Teacher has NOT submitted Day ${d} report`});
+    // Skill intervention alerts
+    const{skillFlags,mentorFlags}=getMgmtInterventions(c);
+    skillFlags.forEach(f=>alerts.push({type:'skill',msg:`${c.menteeName}: ⚠️ ${f.icon} ${f.name} — uncleared for 2 consecutive days. MGMT may need to intervene.`,cohort:c}));
+    mentorFlags.forEach(f=>alerts.push({type:'mgmt',msg:`${c.menteeName} Day ${f.day}: Mentor flagged — "${f.flag}"`,cohort:c}));
+  });
+  el.innerHTML=`
+    <div style="margin-bottom:12px"><div style="font-size:15px;font-weight:700">Management Dashboard 🏫</div><div style="font-size:11px;color:var(--mut)">${today}</div></div>
+    <div class="stats">
+      <div class="stat"><div class="stat-num">${S.cohorts.length}</div><div class="stat-lbl">Total Cohorts</div></div>
+      <div class="stat"><div class="stat-num" style="color:var(--grn)">${active.length}</div><div class="stat-lbl">Active</div></div>
+      <div class="stat"><div class="stat-num" style="color:var(--acc)">${completed.length}</div><div class="stat-lbl">Completed</div></div>
+      <div class="stat"><div class="stat-num" style="color:${alerts.length?'var(--red)':'var(--grn)'}">${alerts.length}</div><div class="stat-lbl">⚠️ Attention</div></div>
+    </div>
+    ${alerts.length?`<div class="card" style="border-color:#F09595">
+      <div class="card-title" style="color:var(--red);margin-bottom:8px">⚠️ Needs Attention (${alerts.length})</div>
+      ${alerts.map(a=>`<div class="alert ${a.type==='skill'?'alert-red':a.type==='mgmt'?'alert-amb':'alert-amb'}" style="margin-bottom:5px">${a.msg}</div>`).join('')}
+    </div>`:`<div class="alert alert-grn" style="margin-bottom:12px">✅ No alerts — all on track</div>`}
+    <div class="card">
+      <div class="card-hdr"><span class="card-title">Active Cohorts</span><button class="btn btn-pri btn-sm" onclick="goPage('mgmt')">+ New Cohort</button></div>
+      ${active.length===0?`<div style="text-align:center;padding:20px;color:var(--mut)">No active cohorts. Go to Management to create one.</div>`:active.map(c=>renderCohortRow(c)).join('')}
+    </div>
+    ${completed.length?`<div class="card"><div class="card-hdr"><span class="card-title">Completed ✅</span></div>${completed.map(c=>renderCohortRow(c)).join('')}</div>`:''}`;
+}
+
+function renderCohortRow(c){
+  const day=c.currentDay||1;const stage=getStageForDay(day);const{pct}=stageProgress(c);
+  const mr=getReport(c.id,'mentor',day);const tr=getReport(c.id,'mentee',day);
+  return`<div class="cohort-card" onclick="selectCohortAndView('${c.id}')">
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <div><span style="font-weight:600">${c.menteeName}</span><span style="color:var(--mut);font-size:11px;margin-left:7px">Mentor: ${c.mentorName}</span>${c.ageGroup?`<span style="color:var(--mut);font-size:10px;margin-left:5px">· ${c.ageGroup}</span>`:''}</div>
+      <div style="display:flex;gap:5px"><span class="chip chip-blue">Day ${day}</span><span class="chip ${stage.id===5?'chip-grn':'chip-amb'}">S${stage.id}</span>${c.status==='completed'?'<span class="chip chip-grn">✅</span>':''}</div>
+    </div>
+    <div class="cohort-meta">Started: ${fmtDate(c.startDate)} · ${pct}% complete</div>
+    <div class="prog-bar" style="margin-top:5px"><div class="prog-fill ${pct===100?'grn':''}" style="width:${pct}%"></div></div>
+    <div style="display:flex;gap:10px;margin-top:6px;font-size:10px">
+      <span>${mr?'✅':'⏳'} Mentor report</span><span>${tr?'✅':'⏳'} New Teacher report</span>
+    </div>
+  </div>`;
+}
+
+function selectCohortAndView(id){S.cohortId=id;goPage('report');}
+
+function renderMiniTimeline(cohort){
+  const day=cohort?cohort.currentDay||1:1;
+  return`<div class="timeline">${STAGES.map(s=>{
+    const maxDay=Math.max(...s.days);const isDone=maxDay<day;const isCurrent=s.days.includes(day);
+    return`<div class="stage-block ${isDone?'done':''} ${isCurrent?'current':''}">
+      <div class="stage-bar"></div>
+      <div class="stage-dot">${isDone?'✓':s.id}</div>
+      <div class="stage-lbl">S${s.id}<br><span style="font-size:7px">${s.nameZh}</span></div>
+    </div>`;
+  }).join('')}</div>`;
+}
+
+// ══════════════════════════════════════════════════════════════
+// TASKS PAGE
+// ══════════════════════════════════════════════════════════════
+function renderQuickReference(){
+  return`<div class="card" style="border:.5px solid #F9CB42">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div><div class="card-title">⚡ Quick Reference</div>
+      <div style="font-size:10px;color:var(--mut);margin-top:2px">Training Guide 3_2 — review every day</div></div>
+      <span class="chip" style="background:#FFF8E1;color:#9C6500">At a Glance</span>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div style="background:#F0F7FF;border-radius:8px;padding:11px;border:.5px solid #AABDD4">
+        <div style="font-size:10px;font-weight:700;color:#185FA5;text-transform:uppercase;letter-spacing:.05em;margin-bottom:7px">📝 Daily Checklist</div>
+        <div style="font-size:10px;font-weight:600;color:var(--mut);margin-bottom:4px">BEFORE CLASS</div>
+        ${["Review lesson plan","Prepare all materials","Arrive 15 min early","Set up the classroom"].map(i=>'<div style="font-size:11px;line-height:1.7">☐ '+i+'</div>').join('')}
+        <div style="font-size:10px;font-weight:600;color:var(--mut);margin-top:7px;margin-bottom:4px">DURING CLASS</div>
+        ${["Follow lesson plan exactly","Record activity log","Mirror teaching — no improvisation","Handle MISC on whiteboard"].map(i=>'<div style="font-size:11px;line-height:1.7">☐ '+i+'</div>').join('')}
+        <div style="font-size:10px;font-weight:600;color:var(--mut);margin-top:7px;margin-bottom:4px">AFTER CLASS</div>
+        ${["Submit day report on time","Update activity log","Report MISC in group chat"].map(i=>'<div style="font-size:11px;line-height:1.7">☐ '+i+'</div>').join('')}
+      </div>
+      <div style="display:flex;flex-direction:column;gap:9px">
+        <div style="background:#E1F5EE;border-radius:8px;padding:11px;border:.5px solid #9FE1CB">
+          <div style="font-size:10px;font-weight:700;color:#0F6E56;text-transform:uppercase;letter-spacing:.05em;margin-bottom:7px">🔑 Key Reminders</div>
+          ${[["Mirror Teaching","Copy Mentor EXACTLY — same words, tone, gestures"],["No Improvisation","First LEARN the system, then improve it"],["Record Everything","Your logs = Your training dictionary"],["Ask Questions","If unsure, ASK! Never guess"]].map(([k,v])=>`<div style="font-size:11px;line-height:1.6;margin-bottom:4px"><strong>${k}:</strong> ${v}</div>`).join('')}
+        </div>
+        <div style="background:#FFF8E1;border-radius:8px;padding:11px;border:.5px solid #F9CB42">
+          <div style="font-size:10px;font-weight:700;color:#9C6500;text-transform:uppercase;letter-spacing:.05em;margin-bottom:7px">🆘 Who to Ask</div>
+          ${[["Teaching, lesson plans, classroom mgmt","MENTOR"],["MISC recording, incident reporting","Mentor → MGMT"],["Urgent issues, emergencies","MGMT immediately"],["Policies, SRK procedures","MGMT only"]].map(([q,a])=>`<div style="display:flex;justify-content:space-between;font-size:11px;padding:3px 0;border-bottom:.5px solid #F9CB42;gap:6px"><span style="flex:1;line-height:1.5">${q}</span><span style="font-weight:700;color:#9C6500;white-space:nowrap">${a}</span></div>`).join('')}
+        </div>
+        <div style="background:#FCEBEB;border-radius:8px;padding:11px;border:.5px solid #F09595">
+          <div style="font-size:10px;font-weight:700;color:#7a1f1f;text-transform:uppercase;letter-spacing:.05em;margin-bottom:7px">⚡ Mistakes to Avoid</div>
+          ${["Adding own ideas too soon — master the system first","Thinking logs are optional — they are your dictionary","Guessing instead of asking — always ask Mentor","Skipping steps — every step has a reason"].map(m=>`<div style="font-size:11px;line-height:1.6;color:#7a1f1f;margin-bottom:3px">❌ ${m}</div>`).join('')}
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderStageSopBadges(stageId){
+  const sops=STAGE_SOPS[stageId]||[];
+  if(!sops.length) return '';
+  const label5=stageId===5?'All 13 Teaching Steps':'SOPs to master this stage';
+  const badges=sops.map(id=>{
+    const s=SOP_DATA[id];if(!s)return'';
+    return`<button onclick="openSopModal('${id}')" style="display:inline-flex;align-items:center;gap:5px;padding:6px 11px;border-radius:20px;border:1px solid var(--bdr);background:var(--sur);cursor:pointer;font-size:11px;font-family:inherit;color:var(--acc);margin:3px;transition:all .15s;white-space:nowrap;"
+      onmouseover="this.style.background='#EEF2F7';this.style.borderColor='var(--acc)'" onmouseout="this.style.background='var(--sur)';this.style.borderColor='var(--bdr)'">
+      <span>${s.icon}</span><span>${s.name}</span>
+    </button>`;
+  }).join('');
+  return`<div class="card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <div>
+        <div class="card-title">📖 ${label5}</div>
+        <div style="font-size:11px;color:var(--mut);margin-top:2px">Tap any step to view full procedure + JR / IN / SR approach</div>
+      </div>
+      <span class="chip chip-blue">Stage ${stageId}</span>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:0">${badges}</div>
+  </div>`;
+}
+
+function renderTasks(){
+  const el=document.getElementById('tasks-content');
+  const role=S.role;
+  if(role==='mgmt'){el.innerHTML=`<div class="card" style="padding:28px;text-align:center;color:var(--mut)">Select a cohort in the Report page to view tasks.</div>`;return;}
+  const cohort=getCohort();
+  if(!cohort){el.innerHTML=`<div class="card" style="padding:28px;text-align:center;color:var(--mut)">No cohort assigned. Contact Management.</div>`;return;}
+  const day=cohort.currentDay||1;const stage=getStageForDay(day);
+  const tasks=(TASKS[role]||{})[day]||[];const checked=countChecked(cohort.id,role,day);
+
+  el.innerHTML=`
+    <div class="card">
+      <div class="card-hdr">
+        <div><div class="card-title">Day ${day} — ${role==='mentor'?'Mentor':'New Teacher'}</div>
+        <div style="font-size:11px;color:var(--mut)">Stage ${stage.id}: ${stage.nameZh} · ${stage.theme}</div></div>
+        <div style="text-align:right"><div style="font-size:18px;font-weight:700;color:${checked===tasks.length&&tasks.length>0?'var(--grn)':'var(--acc)'}">${checked}/${tasks.length}</div><div style="font-size:9px;color:var(--mut)">done</div></div>
+      </div>
+      <div class="prog-bar" style="margin-bottom:12px"><div class="prog-fill ${checked===tasks.length&&tasks.length>0?'grn':''}" style="width:${tasks.length?Math.round(checked/tasks.length*100):0}%"></div></div>
+      ${tasks.map(t=>`
+        <div class="task-item ${S.taskChecks[checkKey(cohort.id,role,day,t.id)]?'done':''}" id="ti_${t.id}">
+          <input type="checkbox" id="cb_${t.id}" ${S.taskChecks[checkKey(cohort.id,role,day,t.id)]?'checked':''}
+            onchange="toggleTask('${cohort.id}','${role}',${day},'${t.id}',this.checked)">
+          <label class="task-label" for="cb_${t.id}">${tagBadge(t.tag)}${t.text}</label>
+        </div>`).join('')}
+    </div>
+
+    <div class="card">
+      <div class="card-title" style="margin-bottom:9px">View Other Days</div>
+      <div class="day-grid">
+        ${ALL_DAYS.map(d=>{
+          const s=getStageForDay(d);const c2=countChecked(cohort.id,role,d);
+          const total=((TASKS[role]||{})[d]||[]).length;
+          const isDone=d<day&&c2>0;const isCurrent=d===day;const isLocked=d>day;
+          return`<button class="day-btn ${isDone?'done':''} ${isCurrent?'active':''} ${isLocked?'locked':''}"
+            ${isLocked?'disabled':''} onclick="viewDay(${d},'${cohort.id}','${role}')">
+            <div style="font-weight:600">${getDayLabel(d)}</div>
+            <div style="font-size:8px">S${s.id}</div>
+            ${!isLocked?`<div style="font-size:8px">${c2}/${total}</div>`:''}
+          </button>`;
+        }).join('')}
+      </div>
+    </div>
+    <div class="card" style="background:var(--sur2)">
+      <div class="card-title" style="margin-bottom:5px">⭐ Stage ${stage.id} Success Criteria</div>
+      <div style="font-size:12px;line-height:1.7">${SUCCESS_CRITERIA[stage.id][role]}</div>
+    </div>
+    ${renderStageSopBadges(stage.id)}
+    ${renderQuickReference()}`;
+}
+
+function viewDay(day,cohortId,role){
+  const cohort=getCohort(cohortId);if(!cohort)return;
+  const savedDay=cohort.currentDay;cohort.currentDay=day;
+  renderTasks();cohort.currentDay=savedDay;
+}
+
+function toggleTask(cid,role,day,tid,val){
+  S.taskChecks[checkKey(cid,role,day,tid)]=val;saveAll();
+  const item=document.getElementById('ti_'+tid);
+  if(item){if(val)item.classList.add('done');else item.classList.remove('done');}
+  // Update counter
+  const cohort=getCohort(cid);if(!cohort)return;
+  const tasks=(TASKS[role]||{})[day]||[];const checked=countChecked(cid,role,day);
+  const counterEl=document.querySelector('.card-title + * + .prog-bar + * .stat-num');
+  // Just re-render tasks
+  if(S.role===role)renderTasks();
+}
+
+// ══════════════════════════════════════════════════════════════
+// REPORT PAGE
+// ══════════════════════════════════════════════════════════════
+function skillKey(cid,role,day,sopId,qi){return`sk_${cid}_${role}_${day}_${sopId}_${qi}`;}
+
+function skillProbeKey(cid,role,day,sopId){return`sp_${cid}_${role}_${day}_${sopId}`;}
+function skillNoteKey(cid,role,day,sopId){return`sn_${cid}_${role}_${day}_${sopId}`;}
+
+function renderSkillConfirm(cohort,role,day,stage,existing){
+  const sops=STAGE_SOPS[stage.id]||[];
+  const cfg=SKILL_STAGES[stage.id]?.[role];
+  if(!sops.length||!cfg)return'';
+  const sk=existing?.skills||{};
+  const probes=existing?.probes||{};
+  const notes=existing?.notes||{};
+  const meta=STAGE_META[stage.id];
+  const roleLabel=role==='mentor'?'What I taught & confirmed':'What I learned & practised';
+
+  let html=`<div style="margin-bottom:14px">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+      <div style="font-size:12px;font-weight:700">🎯 Skill Confirmation — Stage ${stage.id}: ${meta.label}</div>
+      <span class="chip chip-blue">${roleLabel}</span>
+    </div>
+    <div style="font-size:10px;color:var(--mut);margin-bottom:10px;font-style:italic">Risk this stage: ${meta.risk}</div>`;
+
+  sops.forEach(sopId=>{
+    const sop=SOP_DATA[sopId];if(!sop)return;
+    const checked=sk[sopId]?.[0]===true;
+    const probeVal=probes[sopId]||'';
+    const noteVal=notes[sopId]||'';
+    const selOpt=cfg.options.find(o=>o.val===probeVal);
+    const borderCol=probeVal===''?'var(--bdr)':selOpt?.val==='correct'||selOpt?.val==='clear'||selOpt?.val==='absolute'||selOpt?.val==='executed'||selOpt?.val==='full'||selOpt?.val==='exact'||selOpt?.val==='yes'||selOpt?.val==='smooth'?'#9FE1CB':selOpt?.requireNote&&!selOpt?.warn?.includes('MGMT')?'#F9CB42':'#F09595';
+
+    html+=`<div style="border:.5px solid ${borderCol};border-radius:8px;padding:11px;margin-bottom:9px;background:var(--sur)">
+      <div style="display:flex;align-items:center;gap:7px;margin-bottom:9px">
+        <span style="font-size:16px">${sop.icon}</span>
+        <span style="font-weight:600;font-size:12px">${sop.name}</span>
+        <span style="font-size:9px;color:var(--mut);margin-left:auto">${sop.when}</span>
+      </div>
+
+      <!-- Step 1: Checkbox -->
+      <div style="display:flex;align-items:flex-start;gap:8px;padding-bottom:9px;border-bottom:.5px solid var(--bdr);margin-bottom:9px">
+        <input type="checkbox" id="${skillKey(cohort.id,role,day,sopId,0)}" ${checked?'checked':''}
+          style="margin-top:2px;width:15px;height:15px;accent-color:var(--grn);flex-shrink:0;cursor:pointer"
+          onchange="onSkillCheck('${cohort.id}','${role}',${day},'${sopId}',this.checked)">
+        <label for="${skillKey(cohort.id,role,day,sopId,0)}" style="font-size:12px;font-weight:500;cursor:pointer;color:${checked?'var(--grn)':'var(--txt)'}">${cfg.check}</label>
+      </div>
+
+      <!-- Step 2: Understanding Probe (radio) -->
+      <div style="font-size:11px;font-weight:600;color:var(--mut);margin-bottom:7px">${cfg.probe}</div>
+      <div style="display:flex;flex-direction:column;gap:5px">
+      ${cfg.options.map(opt=>`
+        <label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;padding:6px 8px;border-radius:6px;border:.5px solid ${probeVal===opt.val?borderCol:'var(--bdr)'};background:${probeVal===opt.val?'var(--sur2)':'transparent'};transition:all .15s">
+          <input type="radio" name="${skillProbeKey(cohort.id,role,day,sopId)}" value="${opt.val}" ${probeVal===opt.val?'checked':''}
+            style="margin-top:1px;flex-shrink:0;cursor:pointer;accent-color:var(--acc)"
+            onchange="onProbeChange('${cohort.id}','${role}',${day},'${sopId}','${opt.val}')">
+          <span style="font-size:11px;line-height:1.5">${opt.label}</span>
+        </label>`).join('')}
+      </div>
+
+      <!-- Step 3: Conditional warning + note box -->
+      <div id="probe_extra_${cohort.id}_${role}_${day}_${sopId}">
+        ${renderProbeExtra(cohort.id,role,day,sopId,probeVal,noteVal,cfg)}
+      </div>
+    </div>`;
+  });
+
+  html+=`</div>`;
+  return html;
+}
+
+function renderProbeExtra(cid,role,day,sopId,probeVal,noteVal,cfg){
+  if(!probeVal)return'';
+  const opt=cfg.options.find(o=>o.val===probeVal);
+  if(!opt)return'';
+  let html='';
+  if(opt.warn){
+    const isRed=opt.warn.includes('MGMT')||opt.warn.includes('CRITICAL')||opt.warn.includes('escalat')||opt.warn.includes('flagged');
+    html+=`<div style="margin-top:8px;padding:7px 10px;border-radius:6px;background:${isRed?'#FCEBEB':'#FFF8E1'};border:.5px solid ${isRed?'#F09595':'#F9CB42'};font-size:11px;color:${isRed?'#7a1f1f':'#7a4500'};line-height:1.5">${opt.warn}</div>`;
+  }
+  if(opt.requireNote){
+    html+=`<div style="margin-top:8px">
+      <textarea id="${skillNoteKey(cid,role,day,sopId)}" rows="2" placeholder="${opt.notePlaceholder||'Please describe…'}"
+        style="width:100%;border:.5px solid var(--bdr);border-radius:6px;padding:7px;font-family:inherit;font-size:11px;resize:vertical;background:var(--sur)"
+        oninput="saveNoteTemp('${cid}','${role}',${day},'${sopId}',this.value)">${noteVal}</textarea>
+    </div>`;
+  }
+  return html;
+}
+
+// Live handlers — update UI without full re-render
+function onSkillCheck(cid,role,day,sopId,val){
+  // Just visual — actual save on submit
+}
+function onProbeChange(cid,role,day,sopId,val){
+  const cohort=getCohort(cid);if(!cohort)return;
+  const stage=getStageForDay(day);
+  const cfg=SKILL_STAGES[stage.id]?.[role];if(!cfg)return;
+  const existing=getReport(cid,role,day);
+  const noteVal=(existing?.notes||{})[sopId]||'';
+  const el=document.getElementById(`probe_extra_${cid}_${role}_${day}_${sopId}`);
+  if(el)el.innerHTML=renderProbeExtra(cid,role,day,sopId,val,noteVal,cfg);
+}
+function saveNoteTemp(cid,role,day,sopId,val){/* collected on submit */}
+
+function collectSkillData(cid,role,day){
+  const stage=getStageForDay(day);
+  const sops=STAGE_SOPS[stage.id]||[];
+  const cfg=SKILL_STAGES[stage.id]?.[role];
+  const skills={},probes={},notes={};
+  sops.forEach(sopId=>{
+    const cb=document.getElementById(skillKey(cid,role,day,sopId,0));
+    skills[sopId]=[cb?cb.checked:false];
+    const radios=document.querySelectorAll(`input[name="${skillProbeKey(cid,role,day,sopId)}"]:checked`);
+    probes[sopId]=radios.length?radios[0].value:'';
+    const ta=document.getElementById(skillNoteKey(cid,role,day,sopId));
+    notes[sopId]=ta?ta.value.trim():'';
+  });
+  return{skills,probes,notes};
+}
+
+function renderReport(){
+  const el=document.getElementById('report-content');
+  const role=S.role;
+  if(role==='mgmt'){renderMgmtReportView(el);return;}
+  const cohort=getCohort();
+  if(!cohort){el.innerHTML=`<div class="card" style="padding:28px;text-align:center;color:var(--mut)">No cohort assigned.</div>`;return;}
+  const day=cohort.currentDay||1;const stage=getStageForDay(day);
+  const tasks=(TASKS[role]||{})[day]||[];const checked=countChecked(cohort.id,role,day);
+  const existing=getReport(cohort.id,role,day);
+
+  el.innerHTML=`
+    <div class="card">
+      <div class="card-hdr">
+        <div><div class="card-title">📝 Daily Report — Day ${day}</div>
+        <div style="font-size:11px;color:var(--mut)">${role==='mentor'?'Mentor':'New Teacher'} · Stage ${stage.id}: ${stage.nameZh}</div></div>
+        ${existing?`<span class="chip chip-grn">✅ Submitted ${existing.submitTime||''}</span>`:`<span class="chip chip-amb">⏳ Not submitted</span>`}
+      </div>
+
+      <!-- TASK COMPLETION -->
+      <div style="background:var(--sur2);border-radius:7px;padding:10px;margin-bottom:14px">
+        <div style="font-size:11px;font-weight:600;margin-bottom:6px">📋 Task Completion</div>
+        ${tasks.map(t=>`<div style="display:flex;align-items:center;gap:7px;padding:2px 0;font-size:11px">
+          <span style="color:${S.taskChecks[checkKey(cohort.id,role,day,t.id)]?'var(--grn)':'var(--red)'}">${S.taskChecks[checkKey(cohort.id,role,day,t.id)]?'✅':'⬜'}</span>
+          <span style="flex:1">${t.text.replace(/^⚠️ /,'').replace(/^⭐ /,'')}</span>
+        </div>`).join('')}
+        <div style="margin-top:6px;font-size:10px;color:var(--mut)">Completed: ${checked}/${tasks.length}</div>
+      </div>
+
+      <!-- SKILL CONFIRMATION — CORE SECTION -->
+      ${renderSkillConfirm(cohort,role,day,stage,existing)}
+
+      <!-- WRITTEN REFLECTION -->
+      <div style="border-top:.5px solid var(--bdr);padding-top:12px;margin-top:4px">
+        <div style="font-size:11px;font-weight:700;margin-bottom:10px">✍️ Reflection</div>
+
+        <label class="lbl">What went well today? <span style="color:var(--red)">*</span></label>
+        <textarea id="rpt_good" rows="2" placeholder="${role==='mentor'?'e.g. Mentee managed all routines independently, mirrored Flash Card correctly…':'e.g. I successfully led Group Reading, managed Washroom routine without reminder…'}">${existing?.good||''}</textarea>
+
+        <label class="lbl">What needs more work?</label>
+        <textarea id="rpt_improve" rows="2" placeholder="${role==='mentor'?'e.g. Mentee still hesitant during Spelling, needs more practice…':'e.g. I forgot to write date on board, need to remember format…'}">${existing?.improve||''}</textarea>
+
+        ${role==='mentor'?`
+        <label class="lbl">Ready to advance to next stage?</label>
+        <select id="rpt_advance">
+          <option value="">Select…</option>
+          <option value="yes" ${existing?.advanceReady==='yes'?'selected':''}>✅ Yes — Mentee is ready for next stage</option>
+          <option value="no" ${existing?.advanceReady==='no'?'selected':''}>❌ No — needs more time in current stage</option>
+          <option value="pending" ${existing?.advanceReady==='pending'?'selected':''}>⏳ Not sure — need to observe more</option>
+        </select>
+        <label class="lbl" style="margin-top:10px">Does Management need to step in? <span style="font-weight:400;color:var(--mut)">(optional)</span></label>
+        <textarea id="rpt_mgmt_flag" rows="2" placeholder="Describe if any skill requires MGMT to intervene or re-teach directly…">${existing?.mgmtFlag||''}</textarea>`:`
+        <label class="lbl">Questions for Mentor</label>
+        <textarea id="rpt_questions" rows="2" placeholder="Any steps you are unsure about? Ask your Mentor.">${existing?.questions||''}</textarea>`}
+
+        <label class="lbl">MISC / Incidents</label>
+        <textarea id="rpt_misc" rows="2" placeholder="Leave blank if none">${existing?.misc||''}</textarea>
+      </div>
+
+      <div style="margin-top:14px;display:flex;gap:8px;justify-content:flex-end">
+        ${existing?`<button class="btn btn-sm" onclick="deleteReport('${cohort.id}','${role}',${day})">Delete & Re-submit</button>`:''}
+        <button class="btn btn-pri" onclick="submitReport('${cohort.id}','${role}',${day})">${existing?'🔄 Update':'📤 Submit'} Report</button>
+      </div>
+    </div>
+    ${renderPartnerSkillSummary(cohort,role,day,stage)}`;
+}
+
+function renderPartnerSkillSummary(cohort,myRole,day,stage){
+  const pr_=myRole==='mentor'?'mentee':'mentor';
+  const pr=getReport(cohort.id,pr_,day);
+  if(!pr)return`<div class="card"><div class="card-title" style="margin-bottom:5px">${pr_==='mentor'?'👨‍🏫 Mentor':'🎓 New Teacher'} Report</div><div style="color:var(--mut);font-size:12px">Not yet submitted.</div></div>`;
+
+  const sops=STAGE_SOPS[stage.id]||[];
+  let skillHtml='';
+  if(sops.length&&pr.skills){
+    skillHtml=`<div style="margin-top:10px;border-top:.5px solid var(--bdr);padding-top:10px">
+      <div style="font-size:11px;font-weight:600;margin-bottom:8px">🎯 Their Skill Confirmation</div>`;
+    sops.forEach(sopId=>{
+      const sop=SOP_DATA[sopId];if(!sop)return;
+      const sk=pr.skills[sopId]||[false,false];
+      const allDone=sk.every(v=>v===true);const anyDone=sk.some(v=>v===true);
+      skillHtml+=`<div style="display:flex;align-items:center;gap:8px;padding:4px 0;font-size:11px">
+        <span>${sop.icon}</span>
+        <span style="flex:1">${sop.name}</span>
+        <span style="font-size:12px">${allDone?'✅':anyDone?'⏳':'⬜'}</span>
+      </div>`;
+    });
+    skillHtml+=`</div>`;
+  }
+
+  // Privacy gate: Mentee must NOT see Mentor's critique, advance decision, mgmt flag, or incident notes
+  // These are MGMT-only fields. Mentee only sees Mentor's positive feedback + skill checkbox status.
+  const isMenteeViewingMentor=(myRole==='mentee'&&pr_==='mentor');
+
+  return`<div class="card">
+    <div class="card-hdr"><span class="card-title">${pr_==='mentor'?'👨‍🏫 Mentor':'🎓 New Teacher'} Report — Day ${day}</span><span class="chip chip-grn">✅ ${pr.submitTime}</span></div>
+    <div style="font-size:12px;line-height:1.7">
+      ${pr.good?`<div><strong>✅</strong> ${pr.good}</div>`:''}
+      ${!isMenteeViewingMentor&&pr.improve?`<div style="margin-top:3px"><strong>🔧</strong> ${pr.improve}</div>`:''}
+      ${!isMenteeViewingMentor&&pr.advanceReady?`<div style="margin-top:6px;font-size:11px"><strong>Advance:</strong> ${pr.advanceReady==='yes'?'✅ Ready':pr.advanceReady==='no'?'❌ Not yet':'⏳ Pending'}</div>`:''}
+      ${!isMenteeViewingMentor&&pr.mgmtFlag?`<div style="margin-top:6px;padding:6px 8px;background:#FFF8E1;border-radius:6px;font-size:11px;color:var(--amb)"><strong>⚠️ MGMT flag:</strong> ${pr.mgmtFlag}</div>`:''}
+      ${pr.questions?`<div style="margin-top:3px;color:var(--amb)"><strong>❓</strong> ${pr.questions}</div>`:''}
+      ${!isMenteeViewingMentor&&pr.misc?`<div style="margin-top:3px;color:var(--red)"><strong>⚠️</strong> ${pr.misc}</div>`:''}
+      ${isMenteeViewingMentor?`<div style="margin-top:8px;font-size:10px;color:var(--hint);font-style:italic">Mentor's detailed feedback is shared with Management only.</div>`:''}
+    </div>
+    ${skillHtml}
+  </div>`;
+}
+
+function submitReport(cid,role,day){
+  const good=document.getElementById('rpt_good')?.value.trim();
+  if(!good){alert('Please fill in what went well today.');return;}
+  const stage=getStageForDay(day);
+  const sops=STAGE_SOPS[stage.id]||[];
+  const qs=SKILL_CONFIRM[stage.id]?.[role]||[];
+
+  // Collect skill confirmations + probes + notes
+  const{skills,probes,notes}=collectSkillData(cid,role,day);
+
+  const rpt={id:genId('rpt'),cohortId:cid,role,day,good,skills,probes,notes,
+    improve:document.getElementById('rpt_improve')?.value.trim()||'',
+    misc:document.getElementById('rpt_misc')?.value.trim()||'',
+    submitTime:new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}),
+    submitDate:getTodayISO(),
+    tasksChecked:countChecked(cid,role,day),totalTasks:((TASKS[role]||{})[day]||[]).length,
+  };
+  if(role==='mentor'){
+    rpt.advanceReady=document.getElementById('rpt_advance')?.value||'';
+    rpt.mgmtFlag=document.getElementById('rpt_mgmt_flag')?.value.trim()||'';
+  }else{
+    rpt.questions=document.getElementById('rpt_questions')?.value.trim()||'';
+  }
+  S.reports=S.reports.filter(r=>!(r.cohortId===cid&&r.role===role&&r.day===day));
+  S.reports.push(rpt);saveAll();renderReport();
+  alert(`✅ Day ${day} report submitted!`);
+}
+
+function deleteReport(cid,role,day){
+  if(!confirm('Delete and re-enter this report?'))return;
+  S.reports=S.reports.filter(r=>!(r.cohortId===cid&&r.role===role&&r.day===day));
+  saveAll();renderReport();
+}
+
+function renderMgmtReportView(el){
+  if(!S.cohorts.length){el.innerHTML=`<div class="card" style="padding:28px;text-align:center;color:var(--mut)">No cohorts yet. Create one in Management page.</div>`;return;}
+  const sel=getCohort()||S.cohorts[0];S.cohortId=sel.id;
+  el.innerHTML=`
+    <div style="margin-bottom:10px"><div class="card-title">Report Comparison</div></div>
+    <div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:10px">
+      ${S.cohorts.map(c=>`<button class="btn ${c.id===S.cohortId?'btn-pri':''}" onclick="S.cohortId='${c.id}';renderReport()">${c.menteeName}</button>`).join('')}
+    </div>
+    <div id="cohort-rpt-detail"></div>`;
+  renderCohortRptDetail(sel);
+}
+
+function renderCohortRptDetail(cohort){
+  const el=document.getElementById('cohort-rpt-detail');if(!el)return;
+  const day=cohort.currentDay||1;const stage=getStageForDay(day);
+  const mr=getReport(cohort.id,'mentor',day);const tr=getReport(cohort.id,'mentee',day);
+
+  let html=`<div class="itab-row">`;
+  ALL_DAYS.filter(d=>d<=day).forEach(d=>{
+    const mr2=getReport(cohort.id,'mentor',d);const tr2=getReport(cohort.id,'mentee',d);
+    const both=mr2&&tr2;
+    html+=`<button class="itab ${d===day?'on':''}" onclick="viewRptDay('${cohort.id}',${d})">${getDayLabel(d)} ${both?'✅':mr2||tr2?'⏳':'⬜'}</button>`;
+  });
+  html+=`</div>`;
+  html+=`<div style="font-size:11px;color:var(--mut);margin-bottom:10px">Day ${day} · Stage ${stage.id}: ${stage.nameZh} · ${cohort.menteeName}</div>`;
+
+  // ── SKILL CONFIRMATION MATRIX ──
+  const sops=STAGE_SOPS[stage.id]||[];
+  if(sops.length&&(mr||tr)){
+    html+=`<div class="card" style="margin-bottom:10px">
+      <div class="card-hdr"><span class="card-title">🎯 Skill Confirmation Matrix — Stage ${stage.id}</span><span style="font-size:10px;color:var(--mut)">Management overview</span></div>
+      <div style="overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse;font-size:11px">
+        <thead><tr style="background:var(--sur2)">
+          <th style="padding:7px 10px;text-align:left;border-bottom:.5px solid var(--bdr)">SOP Skill</th>
+          <th style="padding:7px 10px;text-align:center;border-bottom:.5px solid var(--bdr);color:#185FA5">👨‍🏫 Mentor<br><span style="font-weight:400;font-size:9px">Taught ✓ | Confirmed ✓</span></th>
+          <th style="padding:7px 10px;text-align:center;border-bottom:.5px solid var(--bdr);color:#0F6E56">🎓 New Teacher<br><span style="font-weight:400;font-size:9px">Learned ✓ | Practised ✓</span></th>
+          <th style="padding:7px 10px;text-align:center;border-bottom:.5px solid var(--bdr)">Status</th>
+        </tr></thead><tbody>`;
+
+    sops.forEach((sopId,i)=>{
+      const sop=SOP_DATA[sopId];if(!sop)return;
+      const msk=mr?.skills?.[sopId]||[false,false];
+      const tsk=tr?.skills?.[sopId]||[false,false];
+      const mskV=mr?.skills?.[sopId]||[false];const tskV=tr?.skills?.[sopId]||[false];
+      const mProbeV=mr?.probes?.[sopId]||'';const tProbeV=tr?.probes?.[sopId]||'';
+      const goodP=['correct','clear','absolute','executed','full','yes','smooth','exact'];
+      const badP=['poor','major','significant','notexecuted','dependent','skipped','help','struggled'];
+      const mGood=mskV[0]&&goodP.includes(mProbeV);
+      const tGood=tskV[0]&&goodP.includes(tProbeV);
+      const mBadFlag=badP.includes(mProbeV);const tBadFlag=badP.includes(tProbeV);
+      const bothFull=mGood&&tGood;
+      const noData=!mr&&!tr;
+      const statusCls=bothFull?'chip-grn':mBadFlag||tBadFlag?'chip-red':(!mr||!tr)?'chip-amb':'chip-amb';
+      const statusTxt=bothFull?'✅ Cleared':noData?'⬜ No data':(!mr||!tr)?'⏳ Pending':mBadFlag?'🔴 Mentor flagged issue':tBadFlag?'🔴 NT flagged issue':'⚠️ Incomplete';
+      // MGMT flag
+      const hasMgmtFlag=mr?.mgmtFlag&&mr.mgmtFlag.trim();
+
+      html+=`<tr style="${i%2===0?'':'background:var(--sur2)'}">
+        <td style="padding:7px 10px">
+          <div style="display:flex;align-items:center;gap:6px">
+            <span>${sop.icon}</span>
+            <div><div style="font-weight:600">${sop.name}</div><div style="font-size:9px;color:var(--mut)">${sop.when}</div></div>
+          </div>
+        </td>
+        <td style="padding:7px 10px;text-align:center">
+          ${mr?(()=>{
+            const msk2=mr?.skills?.[sopId]||[false];
+            const mp=mr?.probes?.[sopId]||'';
+            const mn=mr?.notes?.[sopId]||'';
+            const cfg2=SKILL_STAGES[stage.id]?.mentor;
+            const opt2=cfg2?.options?.find(o=>o.val===mp);
+            const good2=['correct','clear','absolute','executed','full'].includes(mp);
+            return`<div style="font-size:10px"><span style="color:${msk2[0]?'var(--grn)':'var(--red)'}">${msk2[0]?'✅':'⬜'}</span> ${cfg2?.check||''}</div>
+              ${mp?`<div style="margin-top:3px;font-size:10px;padding:3px 6px;border-radius:4px;background:${good2?'#E1F5EE':'#FCEBEB'};color:${good2?'var(--grn)':'var(--red)'}">${opt2?.label||mp}</div>`:''}
+              ${mn?`<div style="margin-top:2px;font-size:9px;color:var(--mut);font-style:italic">"${mn.slice(0,60)}${mn.length>60?'…':''}"</div>`:''}`;
+          })():'<span style="color:var(--hint)">—</span>'}
+        </td>
+        <td style="padding:7px 10px;text-align:center">
+          ${tr?(()=>{
+            const tsk2=tr?.skills?.[sopId]||[false];
+            const tp=tr?.probes?.[sopId]||'';
+            const tn=tr?.notes?.[sopId]||'';
+            const cfg3=SKILL_STAGES[stage.id]?.mentee;
+            const opt3=cfg3?.options?.find(o=>o.val===tp);
+            const good3=['yes','smooth','exact','full'].includes(tp);
+            return`<div style="font-size:10px"><span style="color:${tsk2[0]?'var(--grn)':'var(--red)'}">${tsk2[0]?'✅':'⬜'}</span> ${cfg3?.check||''}</div>
+              ${tp?`<div style="margin-top:3px;font-size:10px;padding:3px 6px;border-radius:4px;background:${good3?'#E1F5EE':'#FCEBEB'};color:${good3?'var(--grn)':'var(--red)'}">${opt3?.label||tp}</div>`:''}
+              ${tn?`<div style="margin-top:2px;font-size:9px;color:var(--mut);font-style:italic">"${tn.slice(0,60)}${tn.length>60?'…':''}"</div>`:''}`;
+          })():'<span style="color:var(--hint)">—</span>'}
+        </td>
+        <td style="padding:7px 10px;text-align:center">
+          <span class="chip ${statusCls}">${statusTxt}</span>
+          ${hasMgmtFlag&&sops.indexOf(sopId)===0?`<div style="margin-top:4px;font-size:9px;color:var(--amb)">⚠️ MGMT flagged</div>`:''}
+        </td>
+      </tr>`;
+    });
+    html+=`</tbody></table></div>`;
+
+    // MGMT flag from mentor
+    if(mr?.mgmtFlag){
+      html+=`<div class="alert alert-amb" style="margin-top:10px"><strong>⚠️ Mentor flagged for MGMT:</strong> ${mr.mgmtFlag}</div>`;
+    }
+    html+=`</div>`;
+  }
+
+  // ── SIDE BY SIDE REPORTS ──
+  html+=`<div class="grid2">`;
+  html+=`<div class="card"><div class="card-hdr"><span class="card-title">👨‍🏫 Mentor</span>${mr?`<span class="chip chip-grn">✅ ${mr.submitTime}</span>`:'<span class="chip chip-red">Pending</span>'}</div>`;
+  if(mr){html+=renderRptBody(mr,'mentor');if(mr.advanceReady){const cls=mr.advanceReady==='yes'?'alert-grn':mr.advanceReady==='no'?'alert-red':'alert-amb';const lbl=mr.advanceReady==='yes'?'✅ Ready to advance':mr.advanceReady==='no'?'❌ Not ready':'⏳ Needs more time';html+=`<div class="alert ${cls}" style="margin-top:8px">${lbl}</div>`;}}
+  else{html+=`<div style="color:var(--mut);font-size:12px;padding:10px 0">Awaiting submission…</div>`;}
+  html+=`</div>`;
+  html+=`<div class="card"><div class="card-hdr"><span class="card-title">🎓 New Teacher</span>${tr?`<span class="chip chip-grn">✅ ${tr.submitTime}</span>`:'<span class="chip chip-red">Pending</span>'}</div>`;
+  if(tr)html+=renderRptBody(tr,'mentee');else html+=`<div style="color:var(--mut);font-size:12px;padding:10px 0">Awaiting submission…</div>`;
+  html+=`</div></div>`;
+
+  const canAdvance=mr?.advanceReady==='yes'&&tr&&day<14;
+  const nextDay=ALL_DAYS[ALL_DAYS.indexOf(day)+1];
+  if(canAdvance&&nextDay){
+    // Check if any skills are not cleared
+    const sopsToCheck=STAGE_SOPS[stage.id]||[];
+    const unclearedSops=sopsToCheck.filter(sopId=>{
+      const mskP=mr?.skills?.[sopId]||[false];const tskP=tr?.skills?.[sopId]||[false];
+      return!(mskP.every(v=>v)&&tskP.every(v=>v));
+    });
+    html+=`<div class="card" style="border-color:var(--grn);background:#E1F5EE">
+      <div class="card-title" style="color:var(--grn);margin-bottom:6px">⭐ Mentor recommends advancing to Day ${nextDay}</div>
+      ${unclearedSops.length?`<div class="alert alert-amb" style="margin-bottom:8px">⚠️ ${unclearedSops.length} skill(s) not fully confirmed: ${unclearedSops.map(id=>SOP_DATA[id]?.name||id).join(', ')}</div>`:'<div style="font-size:11px;margin-bottom:8px">✅ All skills confirmed by both parties.</div>'}
+      <button class="btn btn-grn" onclick="advanceDay('${cohort.id}')">✅ Confirm — Advance to Day ${nextDay}</button>
+    </div>`;
+  }
+  el.innerHTML=html;
+}
+
+function renderRptBody(r,role){
+  let h=`<div style="font-size:12px;line-height:1.7">`;
+  if(r.tasksChecked!==undefined)h+=`<div style="margin-bottom:6px"><span class="chip chip-blue">Tasks ${r.tasksChecked}/${r.totalTasks}</span></div>`;
+  if(r.good)h+=`<div><strong>✅</strong> ${r.good}</div>`;
+  if(r.improve)h+=`<div><strong>🔧</strong> ${r.improve}</div>`;
+  if(r.learn)h+=`<div><strong>📖</strong> ${r.learn}</div>`;
+  if(r.questions)h+=`<div style="color:var(--amb)"><strong>❓</strong> ${r.questions}</div>`;
+  if(r.misc)h+=`<div style="color:var(--red)"><strong>⚠️</strong> ${r.misc}</div>`;
+  if(role==='mentor'&&r.ratings){
+    h+=`<div style="margin-top:6px;font-size:10px">`;
+    Object.entries(r.ratings).forEach(([k,v])=>{if(v)h+=`<div>${k.replace(/_/g,' ')}: ${'⭐'.repeat(parseInt(v)||0)}</div>`;});
+    h+=`</div>`;
+  }
+  h+=`</div>`;return h;
+}
+
+function viewRptDay(cohortId,day){
+  const cohort=getCohort(cohortId);if(!cohort)return;
+  const saved=cohort.currentDay;cohort.currentDay=day;
+  renderCohortRptDetail(cohort);cohort.currentDay=saved;
+}
+
+function advanceDay(cohortId){
+  const cohort=getCohort(cohortId);if(!cohort)return;
+  const day=cohort.currentDay||1;const idx=ALL_DAYS.indexOf(day);
+  if(idx<ALL_DAYS.length-1){cohort.currentDay=ALL_DAYS[idx+1];saveAll();alert(`✅ Advanced to Day ${cohort.currentDay}!`);renderCohortRptDetail(cohort);}
+  else{cohort.status='completed';saveAll();alert('🎉 Training complete! Mentee has officially taken on the role!');renderCohortRptDetail(cohort);}
+}
+
+// ══════════════════════════════════════════════════════════════
+// PROGRESS PAGE
+// ══════════════════════════════════════════════════════════════
+function renderProgress(){
+  const el=document.getElementById('progress-content');
+  if(S.role==='mgmt'){
+    el.innerHTML=`<div style="margin-bottom:10px"><div class="card-title">All Cohorts Progress</div></div>`+
+      (S.cohorts.length===0?`<div class="card" style="text-align:center;padding:28px;color:var(--mut)">No cohorts yet.</div>`:S.cohorts.map(c=>renderFullProgress(c)).join(''));
+    return;
+  }
+  const cohort=getCohort();
+  if(!cohort){el.innerHTML=`<div class="card" style="padding:28px;text-align:center;color:var(--mut)">No cohort assigned.</div>`;return;}
+  el.innerHTML=renderFullProgress(cohort,S.role);
+}
+
+function renderFullProgress(cohort,role){
+  const day=cohort.currentDay||1;const{pct}=stageProgress(cohort);
+  let html=`<div class="card" style="margin-bottom:12px">
+    <div class="card-hdr">
+      <div><div class="card-title">🎓 ${cohort.menteeName} — Training Progress</div>
+      <div style="font-size:11px;color:var(--mut)">Mentor: ${cohort.mentorName} · Started: ${fmtDate(cohort.startDate)}${cohort.ageGroup?' · '+cohort.ageGroup:''}</div></div>
+      <span class="chip ${pct===100?'chip-grn':'chip-blue'}">${pct}% Complete</span>
+    </div>
+    ${renderMiniTimeline(cohort)}
+    <div style="margin-top:12px;overflow-x:auto">
+    <table style="width:100%;border-collapse:collapse;font-size:11px">
+      <thead><tr style="background:var(--sur2)">
+        <th style="padding:6px 9px;border-bottom:.5px solid var(--bdr);text-align:left">Day</th>
+        <th style="padding:6px 9px;border-bottom:.5px solid var(--bdr);text-align:center">Stage</th>
+        <th style="padding:6px 9px;border-bottom:.5px solid var(--bdr);text-align:center">Mentor Tasks</th>
+        <th style="padding:6px 9px;border-bottom:.5px solid var(--bdr);text-align:center">Mentee Tasks</th>
+        <th style="padding:6px 9px;border-bottom:.5px solid var(--bdr);text-align:center">Mentor Rpt</th>
+        <th style="padding:6px 9px;border-bottom:.5px solid var(--bdr);text-align:center">NT Rpt</th>
+        <th style="padding:6px 9px;border-bottom:.5px solid var(--bdr);text-align:center">Status</th>
+      </tr></thead><tbody>`;
+  ALL_DAYS.forEach((d,i)=>{
+    const s=getStageForDay(d);
+    const mt=(TASKS.mentor[d]||[]).length;const nt=(TASKS.mentee[d]||[]).length;
+    const md=countChecked(cohort.id,'mentor',d);const nd=countChecked(cohort.id,'mentee',d);
+    const mr=getReport(cohort.id,'mentor',d);const tr=getReport(cohort.id,'mentee',d);
+    const isCurrent=d===day;const isFuture=d>day;
+    html+=`<tr style="${i%2===0?'':'background:var(--sur2)'}${isCurrent?' border-left:3px solid var(--acc);':''}">
+      <td style="padding:6px 9px;font-weight:${isCurrent?'700':'400'}">${getDayLabel(d)}${isCurrent?' 👈':''}</td>
+      <td style="padding:6px 9px;text-align:center"><span class="chip chip-blue">S${s.id}</span></td>
+      <td style="padding:6px 9px;text-align:center;color:${isFuture?'var(--hint)':'var(--txt)'}">${isFuture?'—':`${md}/${mt}`}</td>
+      <td style="padding:6px 9px;text-align:center;color:${isFuture?'var(--hint)':'var(--txt)'}">${isFuture?'—':`${nd}/${nt}`}</td>
+      <td style="padding:6px 9px;text-align:center">${isFuture?'—':mr?'<span class="chip chip-grn">✅</span>':'<span class="chip chip-amb">⏳</span>'}</td>
+      <td style="padding:6px 9px;text-align:center">${isFuture?'—':tr?'<span class="chip chip-grn">✅</span>':'<span class="chip chip-amb">⏳</span>'}</td>
+      <td style="padding:6px 9px;text-align:center">${isFuture?'<span style="color:var(--hint)">Upcoming</span>':isCurrent?'<span class="chip chip-blue">Today</span>':mr&&tr?'<span class="chip chip-grn">Done</span>':'<span class="chip chip-amb">Partial</span>'}</td>
+    </tr>`;
+  });
+  html+=`</tbody></table></div>
+    ${renderTrainingChart(cohort)}
+  </div>`;return html;
+}
+
+function renderTrainingChart(cohort){
+  const day=cohort.currentDay||1;
+  // Stage colour palette
+  const stagePal={
+    1:{bg:'#E8F0FE',border:'#7BA7F5',txt:'#1a4490',label:'Establishing Basics',icon:'👁'},
+    2:{bg:'#E6F4EA',border:'#7BC99A',txt:'#0d5c2e',label:'Co-Teaching',icon:'🤝'},
+    3:{bg:'#FEF7E0',border:'#F5C842',txt:'#6b4500',label:'Mirror Teaching',icon:'🪞'},
+    4:{bg:'#FCE8E6',border:'#F28B82',txt:'#7a1f1f',label:'Independent Teaching',icon:'🎯'},
+    5:{bg:'#F3E8FD',border:'#C58AF9',txt:'#4a1070',label:'Full Independence',icon:'⭐'},
+  };
+  const weeks=[
+    {label:'Week 1',days:[1,2,3,4]},
+    {label:'Week 2',days:[6,7,8,9]},
+    {label:'Week 3',days:[11,12,13,14]},
+  ];
+
+  // Build grid HTML
+  let grid=`
+  <div style="margin-top:18px">
+    <div style="font-size:12px;font-weight:600;color:var(--mut);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">Training Progress Chart — 3-Week Journey</div>
+    <div style="overflow-x:auto">
+    <table style="border-collapse:separate;border-spacing:4px;width:100%;min-width:520px">
+      <thead>
+        <tr>
+          <td style="width:120px"></td>
+          ${weeks.map(w=>`<td colspan="${w.days.length}" style="text-align:center;font-size:10px;font-weight:700;color:var(--mut);padding-bottom:4px;text-transform:uppercase;letter-spacing:.06em">${w.label}</td>`).join('')}
+        </tr>
+        <tr>
+          <td style="font-size:9px;color:var(--mut);text-transform:uppercase;letter-spacing:.05em;padding-right:8px">Stage</td>
+          ${weeks.flatMap(w=>w.days).map(d=>{
+            const isCurrent=d===day;const isFuture=d>day;
+            return`<td style="text-align:center;font-size:9px;font-weight:${isCurrent?'700':'400'};color:${isCurrent?'var(--acc)':isFuture?'var(--hint)':'var(--mut)'};padding-bottom:2px">${getDayLabel(d)}</td>`;
+          }).join('')}
+        </tr>
+      </thead>
+      <tbody>`;
+
+  STAGES.forEach(stage=>{
+    const pal=stagePal[stage.id];
+    const allDaysCols=weeks.flatMap(w=>w.days);
+    grid+=`<tr>
+      <td style="padding:3px 8px 3px 0;vertical-align:middle">
+        <div style="font-size:10px;font-weight:700;color:${pal.txt}">${pal.icon} S${stage.id}</div>
+        <div style="font-size:9px;color:var(--mut);line-height:1.3">${pal.label}</div>
+      </td>`;
+
+    allDaysCols.forEach(d=>{
+      const isStagDay=stage.days.includes(d);
+      const isCurrent=d===day;
+      const isFuture=d>day;
+      const mr=getReport(cohort.id,'mentor',d);
+      const tr2=getReport(cohort.id,'mentee',d);
+
+      if(!isStagDay){
+        grid+=`<td style="background:var(--sur2);border-radius:6px;height:38px"></td>`;
+      } else {
+        let cellBg=isFuture?'#f5f4f0':pal.bg;
+        let cellBorder=isCurrent?`2px solid var(--acc)`:`.5px solid ${pal.border}`;
+        let inner='';
+        if(isCurrent){
+          inner=`<div style="font-size:9px;font-weight:700;color:var(--acc)">TODAY</div>`;
+        } else if(!isFuture){
+          const done=mr&&tr2;const partial=mr||tr2;
+          inner=`<div style="font-size:12px">${done?'✅':partial?'⏳':'⬜'}</div>`;
+        } else {
+          inner=`<div style="font-size:9px;color:var(--hint)">—</div>`;
+        }
+        grid+=`<td style="background:${cellBg};border:${cellBorder};border-radius:6px;height:38px;text-align:center;vertical-align:middle;transition:all .2s">${inner}</td>`;
+      }
+    });
+    grid+=`</tr>`;
+  });
+
+  grid+=`</tbody></table>
+    </div>
+    <!-- Legend -->
+    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px">
+      <span style="font-size:10px;color:var(--mut)">Legend:</span>
+      <span style="font-size:10px">✅ Both reports done</span>
+      <span style="font-size:10px">⏳ 1 report pending</span>
+      <span style="font-size:10px">⬜ Not yet submitted</span>
+      <span style="font-size:10px;font-weight:600;color:var(--acc)">TODAY highlighted in blue</span>
+    </div>
+  </div>`;
+  return grid;
+}
+
+// ══════════════════════════════════════════════════════════════
+// SOP REFERENCE LIBRARY PAGE
+// ══════════════════════════════════════════════════════════════
+function renderSopLibrary(){
+  const el=document.getElementById('sop-content');
+
+  const CAT_META={
+    morning:{label:'Before Class',icon:'🌅',color:'#0F6E56',bg:'#E8F7F2',border:'#9FE1CB'},
+    monday: {label:'Monday Only', icon:'📅',color:'#854F0B',bg:'#FFF8E1',border:'#F9CB42'},
+    daily:  {label:'Every Day',   icon:'🔄',color:'#185FA5',bg:'#EEF5FF',border:'#AABDD4'},
+    teaching:{label:'Teaching Activities',icon:'📚',color:'#5B35C4',bg:'#F4F0FF',border:'#C5B3F5'},
+    closing:{label:'Closing',     icon:'🌱',color:'#0F6E56',bg:'#E8F7F2',border:'#9FE1CB'},
+    end:    {label:'End of Day',  icon:'🏡',color:'#A32D2D',bg:'#FCEBEB',border:'#F09595'},
+  };
+
+  // Group SOPs by cat
+  const groups={};
+  SOP_LIST.forEach(s=>{
+    if(!groups[s.cat])groups[s.cat]=[];
+    groups[s.cat].push(s);
+  });
+
+  let html=`<div style="margin-bottom:12px">
+    <div class="card-title">📖 SOP Reference Library</div>
+    <div style="font-size:11px;color:var(--mut);margin-top:3px">Tap any step to view full procedure + JR / IN / SR approach</div>
+  </div>`;
+
+  Object.keys(CAT_META).forEach(cat=>{
+    const items=groups[cat];if(!items||!items.length)return;
+    const m=CAT_META[cat];
+    html+=`
+    <!-- ── ${m.label} ── -->
+    <div style="border:.5px solid ${m.border};border-radius:12px;overflow:hidden;margin-bottom:14px">
+      <!-- Category header band -->
+      <div style="background:${m.bg};padding:10px 16px;border-bottom:.5px solid ${m.border};display:flex;align-items:center;gap:8px">
+        <span style="font-size:18px">${m.icon}</span>
+        <span style="font-size:12px;font-weight:800;color:${m.color};text-transform:uppercase;letter-spacing:.07em">${m.label}</span>
+        <span style="margin-left:auto;font-size:10px;color:${m.color};opacity:.7">${items.length} step${items.length>1?'s':''}</span>
+      </div>
+      <!-- Grid of SOP cards -->
+      <div style="display:grid;grid-template-columns:1fr;gap:0">
+        ${items.map((sop,i)=>{
+          const fullWidth=false;
+          const br='';
+          const bb=i<items.length-1?'border-bottom:.5px solid '+m.border+';':'';
+          const stepCount=sop.stepGroups?.reduce((a,g)=>a+g.steps.length,0)||sop.steps?.length||sop.timeline?.reduce((a,b)=>a+b.items.length,0)||0;
+          return`<div onclick="openSopModal('${sop.id}')"
+            style="padding:14px 16px;cursor:pointer;background:var(--sur);transition:background .15s;${fullWidth?'grid-column:1/-1;':''}${br}${bb}"
+            onmouseover="this.style.background='${m.bg}'" onmouseout="this.style.background='var(--sur)'">
+            <div style="display:flex;align-items:flex-start;gap:10px">
+              <span style="font-size:26px;flex-shrink:0;line-height:1">${sop.icon}</span>
+              <div style="flex:1;min-width:0">
+                <div style="font-weight:700;font-size:13px;margin-bottom:2px">${sop.n}. ${sop.name}</div>
+                <div style="font-size:11px;color:var(--mut);margin-bottom:6px">${sop.nameZh}</div>
+                <div style="display:flex;align-items:center;gap:6px">
+                  <span style="font-size:9px;background:${m.bg};color:${m.color};border:.5px solid ${m.border};padding:2px 7px;border-radius:8px;font-weight:600">${sop.when}</span>
+                  <span style="font-size:10px;color:var(--hint)">${stepCount} step${stepCount!==1?'s':''}</span>
+                  <span style="font-size:10px;color:${m.color};margin-left:auto">Tap to view →</span>
+                </div>
+              </div>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+  });
+
+  // Core Principles card at bottom
+  html+=`<div class="card" style="background:var(--sur2)">
+    <div class="card-title" style="margin-bottom:8px">🔑 Core Principles</div>
+    <div style="font-size:12px;line-height:1.8">
+      <div style="margin-bottom:6px"><strong>Gentle but Firm</strong></div>
+      <div>✅ Rules over emotions — use rules, not mood, to manage students</div>
+      <div>✅ Address behaviour, not person — correct what they DID, not who they ARE</div>
+      <div>✅ Be consistent — same standard every day, for every student</div>
+    </div>
+    <div style="margin-top:10px;padding:9px;background:#FCEBEB;border-radius:6px">
+      <div style="font-size:11px;font-weight:600;color:var(--red);margin-bottom:5px">🚫 Teacher Red Lines (NEVER do)</div>
+      <div style="font-size:11px;color:#7a1f1f;line-height:1.8">
+        ❌ No shouting, table-banging, throwing things<br>
+        ❌ No sarcasm or mockery<br>
+        ❌ No personal attacks or labelling students<br>
+        ❌ No bringing up past mistakes<br>
+        ❌ No public humiliation<br>
+        ❌ No different treatment based on your mood
+      </div>
+    </div>
+  </div>`;
+
+  el.innerHTML=html;
+}
+
+
+// ══════════════════════════════════════════════════════════════
+// MGMT PAGE
+// ══════════════════════════════════════════════════════════════
+function renderMgmt(){
+  const el=document.getElementById('mgmt-content');
+  el.innerHTML=`
+    <div class="card">
+      <div class="card-hdr"><span class="card-title">⚙️ Management</span><button class="btn btn-pri" onclick="openNewCohort()">+ New Cohort</button></div>
+      <div style="font-size:12px;color:var(--mut);margin-bottom:10px">Each cohort = one new teacher's 14-day training journey.</div>
+      ${S.cohorts.length===0?`<div style="text-align:center;padding:28px;color:var(--mut)">No cohorts yet.</div>`:
+      S.cohorts.map(c=>`
+        <div class="cohort-card">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <div><span style="font-weight:600;font-size:13px">${c.menteeName}</span><span class="chip chip-blue" style="margin-left:7px">Day ${c.currentDay||1}</span>${c.status==='completed'?'<span class="chip chip-grn" style="margin-left:4px">✅ Done</span>':''}</div>
+            <div style="display:flex;gap:5px">
+              <button class="btn btn-sm" onclick="editCohort('${c.id}')">✏️</button>
+              <button class="btn btn-sm btn-pri" onclick="openAdvanceModal('${c.id}')">▶ Advance</button>
+              <button class="btn btn-sm btn-red" onclick="deleteCohort('${c.id}')">🗑</button>
+            </div>
+          </div>
+          <div class="cohort-meta">Mentor: ${c.mentorName}${c.ageGroup?' · '+c.ageGroup:''} · Start: ${fmtDate(c.startDate)}</div>
+          ${c.notes?`<div class="cohort-meta">Notes: ${c.notes}</div>`:''}
+        </div>`).join('')}
+    </div>
+    ${renderPasswordMgmt()}`;
+}
+
+function renderPasswordMgmt(){
+  const allPw=SYSTEM_PASSWORDS.concat(S.passwords);
+  const roleLabel={mgmt:'🏫 MGMT',mentor:'👨‍🏫 Mentor',mentee:'🎓 New Teacher'};
+  const roleChip={mgmt:'chip-amb',mentor:'chip-blue',mentee:'chip-grn'};
+  return`<div class="card" style="margin-top:10px">
+    <div class="card-hdr" style="margin-bottom:10px">
+      <div><div class="card-title">🔑 Password Management</div>
+      <div style="font-size:10px;color:var(--mut);margin-top:2px">
+        <span style="font-weight:600;color:var(--acc)">SYSTEM</span> = hardcoded, works on all devices.
+        <span style="font-weight:600;color:var(--grn)">LOCAL</span> = saved in this browser only.
+      </div></div>
+    </div>
+    ${allPw.map(p=>`
+      <div style="display:flex;align-items:center;gap:10px;padding:9px 12px;border:.5px solid var(--bdr);border-radius:8px;margin-bottom:6px;background:${p.type==='system'?'var(--sur2)':'var(--sur)'}">
+        <span style="font-size:13px;font-weight:700;color:var(--txt);flex:1;font-family:monospace">${p.pass}</span>
+        <span class="chip ${roleChip[p.role]||'chip-blue'}" style="white-space:nowrap">${roleLabel[p.role]||p.role}</span>
+        <span style="font-size:10px;color:var(--mut)">${p.label}</span>
+        ${p.type==='system'
+          ?`<span style="font-size:9px;color:var(--acc);font-weight:600;background:#EEF2F7;padding:2px 7px;border-radius:8px;white-space:nowrap">SYSTEM</span><span style="font-size:9px;color:var(--hint);font-style:italic;white-space:nowrap">(remove via code)</span>`
+          :`<span style="font-size:9px;color:var(--grn);font-weight:600;background:#E1F5EE;padding:2px 7px;border-radius:8px;white-space:nowrap">LOCAL</span>
+           <button class="btn btn-sm btn-red" style="padding:3px 8px;font-size:10px" onclick="deletePw('${p.id}')">🗑</button>`
+        }
+      </div>`).join('')}
+    <!-- Add new password -->
+    <div style="display:flex;gap:7px;margin-top:10px;flex-wrap:wrap">
+      <input type="text" id="new_pw" placeholder="New password (e.g. SRK2025)" style="flex:1;min-width:140px;padding:8px 10px;font-size:12px">
+      <select id="new_pw_role" style="padding:8px 10px;font-size:12px;border:.5px solid var(--bdr);border-radius:6px;background:var(--sur);font-family:inherit">
+        <option value="mentor">👨‍🏫 Mentor</option>
+        <option value="mentee">🎓 New Teacher</option>
+        <option value="mgmt">🏫 MGMT</option>
+      </select>
+      <input type="text" id="new_pw_label" placeholder="Label (e.g. Batch Jan)" style="flex:1;min-width:120px;padding:8px 10px;font-size:12px">
+      <button class="btn btn-pri" onclick="addPw()">+ Add</button>
+    </div>
+    <div style="font-size:10px;color:var(--hint);margin-top:7px">
+      💡 To change SYSTEM passwords, edit <code>SYSTEM_PASSWORDS</code> in the HTML file directly.
+    </div>
+  </div>`;
+}
+
+function addPw(){
+  const pw=document.getElementById('new_pw')?.value.trim();
+  const role=document.getElementById('new_pw_role')?.value;
+  const label=document.getElementById('new_pw_label')?.value.trim()||'Local Password';
+  if(!pw){alert('Please enter a password.');return;}
+  const allPw=SYSTEM_PASSWORDS.concat(S.passwords);
+  if(allPw.find(p=>p.pass===pw)){alert('This password already exists.');return;}
+  S.passwords.push({id:genId('pw'),pass:pw,role,label,type:'local'});
+  saveAll();renderMgmt();
+}
+
+function deletePw(id){
+  if(!confirm('Remove this password?'))return;
+  S.passwords=S.passwords.filter(p=>p.id!==id);
+  saveAll();renderMgmt();
+}
+
+function openNewCohort(){
+  const ov=document.createElement('div');ov.className='overlay';
+  ov.innerHTML=`<div class="modal">
+    <div class="modal-hdr"><span class="modal-hdr-title">New Training Cohort</span><button class="modal-close" onclick="this.closest('.overlay').remove()">×</button></div>
+    <div class="modal-body">
+      <label class="lbl">New Teacher Name *</label><input type="text" id="nc_mentee" placeholder="e.g. Siti Nurhaliza">
+      <label class="lbl">Mentor Name *</label><input type="text" id="nc_mentor" placeholder="e.g. Teacher Mei">
+      <label class="lbl">Start Date *</label><input type="date" id="nc_start" value="${getTodayISO()}">
+      <label class="lbl">Age Group</label>
+      <select id="nc_age">
+        <option value="">Not specified</option>
+        <option value="JR (Age 4)">JR — Age 4</option>
+        <option value="IN (Age 5)">IN — Age 5</option>
+        <option value="SR (Age 6)">SR — Age 6</option>
+        <option value="Mixed JR+IN">Mixed JR + IN</option>
+        <option value="Mixed IN+SR">Mixed IN + SR</option>
+      </select>
+      <label class="lbl">Notes</label><textarea id="nc_notes" rows="2" placeholder="Optional notes…"></textarea>
+    </div>
+    <div class="modal-foot"><button class="btn" onclick="this.closest('.overlay').remove()">Cancel</button><button class="btn btn-pri" onclick="createCohort()">✅ Create</button></div>
+  </div>`;
+  document.body.appendChild(ov);
+}
+
+function createCohort(){
+  const menteeName=document.getElementById('nc_mentee')?.value.trim();
+  const mentorName=document.getElementById('nc_mentor')?.value.trim();
+  const startDate=document.getElementById('nc_start')?.value;
+  if(!menteeName||!mentorName||!startDate){alert('Please fill in all required fields.');return;}
+  S.cohorts.push({id:genId('cohort'),menteeName,mentorName,startDate,
+    ageGroup:document.getElementById('nc_age')?.value||'',
+    notes:document.getElementById('nc_notes')?.value.trim()||'',
+    currentDay:1,status:'active',createdAt:getTodayISO()});
+  saveAll();document.querySelector('.overlay')?.remove();renderMgmt();
+  alert(`✅ Cohort created for ${menteeName}!`);
+}
+
+function editCohort(id){
+  const c=getCohort(id);if(!c)return;
+  const ov=document.createElement('div');ov.className='overlay';
+  ov.innerHTML=`<div class="modal">
+    <div class="modal-hdr"><span class="modal-hdr-title">Edit Cohort</span><button class="modal-close" onclick="this.closest('.overlay').remove()">×</button></div>
+    <div class="modal-body">
+      <label class="lbl">New Teacher Name</label><input type="text" id="ec_mentee" value="${c.menteeName}">
+      <label class="lbl">Mentor Name</label><input type="text" id="ec_mentor" value="${c.mentorName}">
+      <label class="lbl">Start Date</label><input type="date" id="ec_start" value="${c.startDate}">
+      <label class="lbl">Current Day</label>
+      <select id="ec_day">${ALL_DAYS.map(d=>`<option value="${d}" ${d===c.currentDay?'selected':''}>Day ${d} — ${getStageForDay(d).nameZh}</option>`).join('')}</select>
+      <label class="lbl">Age Group</label>
+      <select id="ec_age">
+        <option value="" ${!c.ageGroup?'selected':''}>Not specified</option>
+        <option value="JR (Age 4)" ${c.ageGroup==='JR (Age 4)'?'selected':''}>JR — Age 4</option>
+        <option value="IN (Age 5)" ${c.ageGroup==='IN (Age 5)'?'selected':''}>IN — Age 5</option>
+        <option value="SR (Age 6)" ${c.ageGroup==='SR (Age 6)'?'selected':''}>SR — Age 6</option>
+        <option value="Mixed JR+IN" ${c.ageGroup==='Mixed JR+IN'?'selected':''}>Mixed JR + IN</option>
+        <option value="Mixed IN+SR" ${c.ageGroup==='Mixed IN+SR'?'selected':''}>Mixed IN + SR</option>
+      </select>
+      <label class="lbl">Status</label>
+      <select id="ec_status">
+        <option value="active" ${c.status==='active'?'selected':''}>Active</option>
+        <option value="completed" ${c.status==='completed'?'selected':''}>Completed</option>
+      </select>
+      <label class="lbl">Notes</label><textarea id="ec_notes" rows="2">${c.notes||''}</textarea>
+    </div>
+    <div class="modal-foot"><button class="btn" onclick="this.closest('.overlay').remove()">Cancel</button><button class="btn btn-pri" onclick="saveCohortEdit('${id}')">Save</button></div>
+  </div>`;
+  document.body.appendChild(ov);
+}
+
+function saveCohortEdit(id){
+  const c=getCohort(id);if(!c)return;
+  c.menteeName=document.getElementById('ec_mentee')?.value.trim()||c.menteeName;
+  c.mentorName=document.getElementById('ec_mentor')?.value.trim()||c.mentorName;
+  c.startDate=document.getElementById('ec_start')?.value||c.startDate;
+  c.currentDay=parseInt(document.getElementById('ec_day')?.value)||c.currentDay;
+  c.ageGroup=document.getElementById('ec_age')?.value||'';
+  c.status=document.getElementById('ec_status')?.value||c.status;
+  c.notes=document.getElementById('ec_notes')?.value.trim()||'';
+  saveAll();document.querySelector('.overlay')?.remove();renderMgmt();
+}
+
+function openAdvanceModal(id){
+  const c=getCohort(id);if(!c)return;
+  const day=c.currentDay||1;const idx=ALL_DAYS.indexOf(day);
+  const nextDay=ALL_DAYS[idx+1];
+  if(!nextDay){alert('Already on the final day!');return;}
+  const mr=getReport(c.id,'mentor',day);const tr=getReport(c.id,'mentee',day);
+  if(confirm(`Advance ${c.menteeName} from Day ${day} → Day ${nextDay}?\n\nMentor report: ${mr?'✅ submitted':'⚠️ NOT submitted'}\nNew Teacher report: ${tr?'✅ submitted':'⚠️ NOT submitted'}\n\nContinue?`)){
+    c.currentDay=nextDay;saveAll();renderMgmt();alert(`✅ Advanced to Day ${nextDay}!`);
+  }
+}
+
+function deleteCohort(id){
+  const c=getCohort(id);if(!c)return;
+  if(!confirm(`Delete cohort for ${c.menteeName}? All reports will be deleted. Cannot undo.`))return;
+  S.cohorts=S.cohorts.filter(x=>x.id!==id);
+  S.reports=S.reports.filter(r=>r.cohortId!==id);
+  Object.keys(S.taskChecks).forEach(k=>{if(k.startsWith(id))delete S.taskChecks[k];});
+  if(S.cohortId===id)S.cohortId=null;
+  saveAll();renderMgmt();
+}
+
+// ══════════════════════════════════════════════════════════════
+// HANDBOOK DATA
+// ══════════════════════════════════════════════════════════════
+const HANDBOOK = JSON.parse("[\n  {\n    \"id\": \"about\",\n    \"num\": \"1.1\",\n    \"title\": \"About Us\",\n    \"icon\": \"🏫\",\n    \"subtitle\": \"Who We Are — Our Story & Departments\",\n    \"sections\": [\n      {\n        \"heading\": \"Welcome to Academee\",\n        \"body\": \"We are more than just an education centre — we are a family dedicated to nurturing star students who are independent, confident, and shine brightly wherever they go.\\n\\nFounded in Muar, Academee has grown to become a trusted name in quality education, consistently ranking in the Top 10 nationally among 200+ Smart Reader Kids centres. Over the years we have educated approximately 10,000 students, many of whom have achieved admissions to prestigious universities and scholarship programmes.\"\n      },\n      {\n        \"heading\": \"Our Four Departments\",\n        \"departments\": [\n          {\n            \"code\": \"SRK/GAK\",\n            \"full\": \"Smart Reader Kids / Genius Academic Kids\",\n            \"age\": \"Ages 3–6\",\n            \"theme\": \"Gentle but Firm 温柔而坚定\",\n            \"focus\": \"Nurture independent, confident, shining little stars who are proud to be Smart Reader students\"\n          },\n          {\n            \"code\": \"ATC\",\n            \"full\": \"After-school Tuition Centre\",\n            \"age\": \"Ages 7–12\",\n            \"theme\": \"Strict but Not Fierce 严而不凶\",\n            \"focus\": \"Nurture independent, proactive, high-achieving primary students who take pride in being Smart Reader students\"\n          },\n          {\n            \"code\": \"SRT\",\n            \"full\": \"Smart Reader Tuition\",\n            \"age\": \"Ages 5–15\",\n            \"theme\": \"Solid & Interesting 扎实而有趣\",\n            \"focus\": \"Build solid English foundation and transform students into English masters who proudly represent Smart Reader\"\n          },\n          {\n            \"code\": \"CIY\",\n            \"full\": \"Coding It Yourself\",\n            \"age\": \"Ages 6–15\",\n            \"theme\": \"Interesting & Substantial 有趣而有料\",\n            \"focus\": \"Open a tech window to the future, nurturing logical thinking and creativity through coding\"\n          }\n        ]\n      },\n      {\n        \"heading\": \"Our Core Values\",\n        \"bullets\": [\n          \"⭐ NURTURE STAR STUDENTS — Students who are independent, confident, and shine brightly\",\n          \"🏆 BUILD BRAND PRIDE — Students proudly say: I am a Smart Reader student\",\n          \"📚 EXCELLENCE IN TEACHING — Follow established methods while maintaining quality standards\",\n          \"🔄 CONTINUOUS IMPROVEMENT — Always learning, always growing, always striving for better\",\n          \"🤝 COLLABORATIVE SPIRIT — Teachers, management, and parents working together for student success\",\n          \"❤️ CARING & PROFESSIONAL — Genuine care for each child combined with high professional standards\"\n        ]\n      }\n    ]\n  },\n  {\n    \"id\": \"core\",\n    \"num\": \"1.2\",\n    \"title\": \"Core Message to All Teachers\",\n    \"icon\": \"💬\",\n    \"subtitle\": \"Being Firm, Not Fierce, Is a Teacher's Strongest Presence\",\n    \"sections\": [\n      {\n        \"heading\": \"The Core Message\",\n        \"body\": \"As teachers, we must be firm, but never fierce.\\nFierceness only makes students fear you.\\nFirmness earns their respect, trust, and cooperation.\\n\\nWhat students truly fear is not your volume or facial expression — but this:\\n• Promises must be kept: Do you keep your word?\\n• Rules apply equally to everyone: Are you fair?\\n• Correct behaviour, guide improvement: Are you firm yet kind?\"\n      },\n      {\n        \"heading\": \"In the Classroom\",\n        \"twoCol\": [\n          {\n            \"good\": [\n              \"✅ Rules matter more than emotions\",\n              \"✅ Methods work better than raised voices\",\n              \"✅ Stability is more powerful than intimidation\"\n            ],\n            \"bad\": [\n              \"❌ No crazy shouting\",\n              \"❌ No sarcasm or mocking\",\n              \"❌ No handling problems when emotions are high\"\n            ]\n          }\n        ]\n      },\n      {\n        \"heading\": \"Three Core Principles (Must Follow)\",\n        \"numbered\": [\n          {\n            \"title\": \"① Be Firm in Rules, Not in Emotions\",\n            \"body\": \"No banging tables, no shouting, no sarcasm. Do not change how you handle issues based on mood. Handle all matters according to rules.\\n\\n👉 Teachers enforce rules, not emotions.\"\n          },\n          {\n            \"title\": \"② Address the Behaviour, Not the Person\",\n            \"body\": \"Do not label students. Do not attack character or personality.\\n\\n❌ Why are you so lazy?\\n✅ Please complete your tasks now.\\n\\n👉 Correct the behaviour. Get straight to the point.\"\n          },\n          {\n            \"title\": \"③ Say It — and Do It. Be Consistent.\",\n            \"body\": \"What applies today applies tomorrow. Same standard for everyone — class leaders, high achievers, and struggling students alike.\\n\\n👉 Students fear double standards, not strict rules.\"\n          }\n        ]\n      },\n      {\n        \"heading\": \"Standard Procedures for Handling Student Issues\",\n        \"numbered\": [\n          {\n            \"title\": \"1. When Setting Rules\",\n            \"body\": \"Calm tone, firm attitude. Rules and execution steps must be clear. No emotional explanation. No bargaining.\"\n          },\n          {\n            \"title\": \"2. When a Rule Is Broken\",\n            \"body\": \"Always follow this order:\\n👉 Reminder once → Rule broken → Enforce immediately (but remain calm)\\n\\n⚠️ CRITICAL: When the FIRST student breaks the rule, stop immediately. If you wait until the situation worsens, you lose control.\\n\\nDo not argue or negotiate. State the rule once, clearly. State what they need to do. Do not tolerate.\"\n          },\n          {\n            \"title\": \"3. When Giving Correction\",\n            \"body\": \"IMPORTANT: No aggressive criticism, no intimidation — speak directly to the point.\\n\\nFor MINOR issues: Speak privately. Listen first, then guide with care.\\nFor SERIOUS issues affecting the class: Address publicly. Explain the reason. Focus on behaviour, not person.\"\n          },\n          {\n            \"title\": \"4. Always Leave a Way Forward After Mistakes\",\n            \"body\": \"Allow correction, but require responsibility. Find any opportunity to praise the corrected student.\\n\\nProcess: Mistake → Reflection → Improvement\"\n          }\n        ]\n      },\n      {\n        \"heading\": \"The Most Important Message\",\n        \"highlight\": \"A calm attitude does not mean low expectations. Firm action is true kindness.\\n\\nEducation is not about who is fiercer. It is about who can turn rules into students habits.\"\n      }\n    ]\n  },\n  {\n    \"id\": \"special\",\n    \"num\": \"1.3\",\n    \"title\": \"What Makes Us Special\",\n    \"icon\": \"✨\",\n    \"subtitle\": \"Our Common DNA — What Every Teacher Must Know\",\n    \"sections\": [\n      {\n        \"heading\": \"Our Common DNA\",\n        \"bullets\": [\n          \"❤️ Make students LOVE coming to Smart Reader classes\",\n          \"❤️ Make students LOVE their teachers\",\n          \"❤️ Make students LOVE learning\",\n          \"🏆 Make students PROUD to say: I am a Smart Reader student\"\n        ]\n      },\n      {\n        \"heading\": \"Three Core Principles\",\n        \"numbered\": [\n          {\n            \"title\": \"① Rules Before Emotions 规则在前，情绪在后\",\n            \"body\": \"Use rules to manage students, not emotions. Stay calm when handling problems. Be consistent: say it and do it.\\n\\n👉 Students fear double standards, not strict rules.\"\n          },\n          {\n            \"title\": \"② Criticise the Behaviour, Protect the Person\",\n            \"body\": \"Correct what they DID, not who they ARE. Never label students. Separate action from identity.\\n\\n👉 You forgot your homework — not You are lazy.\"\n          },\n          {\n            \"title\": \"③ Be Consistent 保持一致\",\n            \"body\": \"Same rules apply to everyone. Today standard is tomorrow standard. No favourites, no exceptions.\\n\\n👉 Consistency builds trust and security.\"\n          }\n        ]\n      },\n      {\n        \"heading\": \"Teacher Red Lines 🚫 (Absolutely Prohibited)\",\n        \"redlines\": [\n          \"NO shouting, table-banging, or throwing things\",\n          \"NO sarcasm or mockery\",\n          \"NO personal attacks or labelling\",\n          \"NO bringing up past mistakes\",\n          \"NO public humiliation\",\n          \"NO treating students differently based on your mood\"\n        ]\n      },\n      {\n        \"heading\": \"The Most Important Message\",\n        \"highlight\": \"Education is not about MANAGEMENT. It is about RELATIONSHIP.\\n\\nWhen students like you, they will:\\n• Listen to you   • Want to learn\\n• Actively improve   • Become your pride\\n\\nMake students love coming, love you, love learning.\\nThis is the essence of great teaching.\"\n      }\n    ]\n  },\n  {\n    \"id\": \"conduct\",\n    \"num\": \"2.1\",\n    \"title\": \"Code of Conduct\",\n    \"icon\": \"📋\",\n    \"subtitle\": \"Guided by Rules, United by Standards\",\n    \"sections\": [\n      {\n        \"heading\": \"A. Attendance & Working Time\",\n        \"subsections\": [\n          {\n            \"sub\": \"Access Card\",\n            \"bullets\": [\n              \"One (1) access card issued upon joining\",\n              \"Replacement fee: RM50 per lost card\"\n            ]\n          },\n          {\n            \"sub\": \"Punch In (Clock In)\",\n            \"bullets\": [\n              \"Arrive and clock in 15 minutes before official working time (8:00am)\",\n              \"Avoid being late — lateness affects attendance records\",\n              \"If technical issue with attendance system, report to MGMT immediately and record time manually\",\n              \"After signing in, go directly to ready class and duty\",\n              \"If eating at school, finish meal 10 minutes before official working time\"\n            ]\n          },\n          {\n            \"sub\": \"Punch Out (Clock Out)\",\n            \"bullets\": [\n              \"Complete all classes and duties before official clock-out time\",\n              \"Ensure classroom is prepared for next day, materials neatly arranged\",\n              \"Do not clock out early without prior MGMT approval\",\n              \"If technical issue, report to MGMT and record time manually\"\n            ]\n          },\n          {\n            \"sub\": \"Leave Application\",\n            \"bullets\": [\n              \"Request and fill Leave Application Form from MGMT\",\n              \"Arrange reliever for duties and classes\",\n              \"Submit form and attach supporting evidence\",\n              \"Follow up to confirm approval or rejection\",\n              \"One day before: remind reliever and pass all teaching materials and lesson plans\"\n            ]\n          },\n          {\n            \"sub\": \"Emergency / Last-Minute Absence\",\n            \"bullets\": [\n              \"Notify and obtain approval from MGMT before 8:00am\",\n              \"Inform MGMT of: (1) Lesson Plan (2) Materials (3) Student Issues (4) Urgent Tasks (5) Additional Notes\",\n              \"Submit leave form after returning, with supporting evidence if any\"\n            ]\n          }\n        ]\n      },\n      {\n        \"heading\": \"B. Workplace Conduct\",\n        \"subsections\": [\n          {\n            \"sub\": \"Dress Code\",\n            \"bullets\": [\n              \"Dress neatly, clothing must be clean and well maintained, maintain good personal hygiene\",\n              \"Shorts and skirts above the knee are not allowed\",\n              \"One (1) pinafore provided FREE upon confirmation. Extra pinafores must be purchased from MGMT\"\n            ]\n          },\n          {\n            \"sub\": \"Shoes\",\n            \"bullets\": [\n              \"Slippers are not allowed. Sandals are permitted\",\n              \"Place shoes neatly on the shoe rack — not on the floor\"\n            ]\n          },\n          {\n            \"sub\": \"Lunch Arrangements\",\n            \"bullets\": [\n              \"30 minutes for lunch daily, taken according to schedule\",\n              \"May bring own meals, eat school-provided meals, or order food to go\",\n              \"If unsure about meal arrangements, ask MGMT for guidance\"\n            ]\n          }\n        ]\n      },\n      {\n        \"heading\": \"C. Mobile Phone & Digital Use\",\n        \"subsections\": [\n          {\n            \"sub\": \"Mobile Phone During Working Hours\",\n            \"bullets\": [\n              \"Set mobile phone to silent mode during working hours\",\n              \"Must NOT be used during teaching sessions (except work-related purposes)\",\n              \"Do not share personal mobile numbers or social media accounts with students or parents\",\n              \"Refrain from personal use: casual calls, browsing, social media, gaming, online shopping\",\n              \"Emergency calls: use designated private areas only (e.g. reception room)\"\n            ]\n          },\n          {\n            \"sub\": \"Photo, Video & Social Media\",\n            \"bullets\": [\n              \"Must not photograph or record students, parents, or colleagues without permission\",\n              \"Student photos and videos are strictly for internal or approved school use only\",\n              \"May not post or discuss content related to students or parents on personal platforms\",\n              \"Must comply with the Personal Data Protection Act (PDPA)\",\n              \"May identify as Company staff on social media but must maintain professionalism\"\n            ]\n          }\n        ]\n      },\n      {\n        \"heading\": \"D. Communication & Reporting\",\n        \"subsections\": [\n          {\n            \"sub\": \"Reporting Line\",\n            \"bullets\": [\n              \"For HR matters: contact ADMIN directly\",\n              \"For work-related issues: report to MGMT and work together to find solutions\"\n            ]\n          },\n          {\n            \"sub\": \"Parents Communication\",\n            \"bullets\": [\n              \"⚠️ Teachers are NOT permitted to communicate directly with parents — to prevent dissemination of inaccurate information\",\n              \"All parent communication must go through MGMT\"\n            ]\n          },\n          {\n            \"sub\": \"Issue Reporting & Incident Handling\",\n            \"bullets\": [\n              \"Immediately report any accidents, incidents, or unusual situations to MGMT or Admin\",\n              \"Urgent matters must be escalated immediately and followed up until fully resolved\",\n              \"Maintain professionalism and confidentiality — report only relevant facts\"\n            ]\n          }\n        ]\n      }\n    ]\n  }\n]");
+
+
+// ── Handbook renderer ──────────────────────────────────────────
+
+// Per-document accent colours
+const HB_THEME = {
+  about:   {bg:'#EEF5FF', border:'#AABDD4', accent:'#185FA5', light:'#D6E8FF'},
+  core:    {bg:'#E8F7F2', border:'#9FE1CB', accent:'#0F6E56', light:'#C2EEE0'},
+  special: {bg:'#FFF8E1', border:'#F9CB42', accent:'#9C6500', light:'#FDEDB0'},
+  conduct: {bg:'#F4F0FF', border:'#C5B3F5', accent:'#5B35C4', light:'#E2D9FF'},
+};
+
+// Department colour accents
+const DEPT_THEME = {
+  'SRK/GAK': {bg:'#E8F7F2', border:'#9FE1CB', code:'#0F6E56'},
+  'ATC':     {bg:'#EEF5FF', border:'#AABDD4', code:'#185FA5'},
+  'SRT':     {bg:'#FFF8E1', border:'#F9CB42', code:'#9C6500'},
+  'CIY':     {bg:'#F4F0FF', border:'#C5B3F5', code:'#5B35C4'},
+};
+
+function renderHandbook(){
+  const el=document.getElementById('handbook-content');
+  const activeId=window._hbActive||'about';
+  const doc=HANDBOOK.find(h=>h.id===activeId)||HANDBOOK[0];
+  const theme=HB_THEME[activeId]||HB_THEME.about;
+
+  // Tab bar
+  let html=`<div style="margin-bottom:12px">
+    <div class="card-title" style="margin-bottom:10px">🏫 Staff Handbook</div>
+    <div class="itab-row">
+      ${HANDBOOK.map(h=>{
+        const t=HB_THEME[h.id];
+        return`<button class="itab ${h.id===activeId?'on':''}"
+          style="${h.id===activeId?`border-bottom-color:${t.accent};color:${t.accent};font-weight:700`:''}"
+          onclick="openHandbook('${h.id}')">${h.icon} ${h.num} ${h.title}</button>`;
+      }).join('')}
+    </div>
+  </div>`;
+
+  // Doc card with themed header
+  html+=`<div style="border:.5px solid ${theme.border};border-radius:12px;overflow:hidden;background:var(--sur)">
+
+    <!-- Coloured header band -->
+    <div style="background:${theme.bg};border-bottom:.5px solid ${theme.border};padding:16px 20px;display:flex;align-items:center;gap:12px">
+      <span style="font-size:32px">${doc.icon}</span>
+      <div>
+        <div style="font-size:16px;font-weight:800;color:${theme.accent}">${doc.num} — ${doc.title}</div>
+        <div style="font-size:11px;color:${theme.accent};opacity:.75;margin-top:2px">${doc.subtitle}</div>
+      </div>
+    </div>
+
+    <div style="padding:18px 20px">`;
+
+  doc.sections.forEach(sec=>{
+    html+=`<div style="margin-bottom:20px">`;
+
+    if(sec.heading){
+      html+=`<div style="font-size:11px;font-weight:800;color:${theme.accent};text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px;padding-bottom:5px;border-bottom:2px solid ${theme.light}">${sec.heading}</div>`;
+    }
+
+    if(sec.body){
+      html+=`<div style="font-size:12px;line-height:1.85;color:var(--txt);white-space:pre-line">${sec.body}</div>`;
+    }
+
+    if(sec.highlight){
+      html+=`<div style="background:${theme.bg};border-left:4px solid ${theme.accent};padding:14px 16px;border-radius:0 10px 10px 0;font-size:12px;line-height:1.85;white-space:pre-line;font-style:italic;color:${theme.accent}">${sec.highlight}</div>`;
+    }
+
+    if(sec.bullets){
+      html+=`<div style="display:flex;flex-direction:column;gap:7px">
+        ${sec.bullets.map(b=>`
+          <div style="display:flex;align-items:flex-start;gap:8px;padding:8px 12px;background:${theme.bg};border-radius:8px;border:.5px solid ${theme.border}">
+            <span style="font-size:13px;flex-shrink:0">${b.split(' ')[0]}</span>
+            <span style="font-size:12px;line-height:1.55">${b.split(' ').slice(1).join(' ')}</span>
+          </div>`).join('')}
+      </div>`;
+    }
+
+    if(sec.redlines){
+      html+=`<div style="background:#FCEBEB;border:.5px solid #F09595;border-radius:10px;padding:14px 16px">
+        <div style="font-size:10px;font-weight:700;color:#7a1f1f;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">These red lines NEVER change — regardless of department or student age</div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          ${sec.redlines.map(r=>`<div style="font-size:12px;line-height:1.55;color:#7a1f1f;display:flex;gap:8px;align-items:flex-start"><span style="flex-shrink:0">❌</span><span>${r}</span></div>`).join('')}
+        </div>
+      </div>`;
+    }
+
+    if(sec.departments){
+      html+=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        ${sec.departments.map(d=>{
+          const dt=DEPT_THEME[d.code]||{bg:'#f5f4f0',border:'#e0ddd6',code:'#185FA5'};
+          return`<div style="border:.5px solid ${dt.border};border-radius:10px;overflow:hidden">
+            <div style="background:${dt.bg};padding:10px 12px;border-bottom:.5px solid ${dt.border}">
+              <div style="font-weight:800;font-size:14px;color:${dt.code}">${d.code}</div>
+              <div style="font-size:10px;color:var(--mut);margin-top:1px">${d.full} · ${d.age}</div>
+            </div>
+            <div style="padding:10px 12px">
+              <div style="font-size:11px;font-weight:700;color:var(--gold);margin-bottom:5px">${d.theme}</div>
+              <div style="font-size:11px;line-height:1.55;color:var(--txt)">${d.focus}</div>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>`;
+    }
+
+    if(sec.twoCol){
+      sec.twoCol.forEach(tc=>{
+        html+=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px">
+          <div style="background:#E1F5EE;border:.5px solid #9FE1CB;border-radius:10px;padding:12px">
+            <div style="font-size:10px;font-weight:700;color:#0F6E56;margin-bottom:7px;text-transform:uppercase;letter-spacing:.05em">✅ Do</div>
+            ${tc.good.map(g=>`<div style="font-size:12px;line-height:1.65;margin-bottom:3px">${g}</div>`).join('')}
+          </div>
+          <div style="background:#FCEBEB;border:.5px solid #F09595;border-radius:10px;padding:12px">
+            <div style="font-size:10px;font-weight:700;color:#A32D2D;margin-bottom:7px;text-transform:uppercase;letter-spacing:.05em">❌ Never</div>
+            ${tc.bad.map(b=>`<div style="font-size:12px;line-height:1.65;margin-bottom:3px">${b}</div>`).join('')}
+          </div>
+        </div>`;
+      });
+    }
+
+    if(sec.numbered){
+      html+=`<div style="display:flex;flex-direction:column;gap:10px">
+        ${sec.numbered.map((n,i)=>{
+          const colours=['#EEF5FF','#E8F7F2','#FFF8E1','#F4F0FF'];
+          const borders=['#AABDD4','#9FE1CB','#F9CB42','#C5B3F5'];
+          const accents=['#185FA5','#0F6E56','#9C6500','#5B35C4'];
+          const ci=i%4;
+          return`<div style="border:.5px solid ${borders[ci]};border-radius:10px;overflow:hidden">
+            <div style="background:${colours[ci]};padding:9px 14px;border-bottom:.5px solid ${borders[ci]}">
+              <div style="font-weight:700;font-size:12px;color:${accents[ci]}">${n.title}</div>
+            </div>
+            <div style="padding:10px 14px;font-size:12px;line-height:1.75;white-space:pre-line;color:var(--txt)">${n.body}</div>
+          </div>`;
+        }).join('')}
+      </div>`;
+    }
+
+    if(sec.subsections){
+      html+=`<div style="display:flex;flex-direction:column;gap:12px">
+        ${sec.subsections.map(ss=>`
+          <div style="border:.5px solid ${theme.border};border-radius:10px;overflow:hidden">
+            <div style="background:${theme.bg};padding:8px 14px;border-bottom:.5px solid ${theme.border}">
+              <div style="font-size:11px;font-weight:700;color:${theme.accent}">${ss.sub}</div>
+            </div>
+            <div style="padding:10px 14px;display:flex;flex-direction:column;gap:5px">
+              ${ss.bullets.map(b=>`<div style="font-size:12px;line-height:1.55;display:flex;gap:8px;align-items:flex-start"><span style="color:${theme.accent};flex-shrink:0">•</span><span>${b}</span></div>`).join('')}
+            </div>
+          </div>`).join('')}
+      </div>`;
+    }
+
+    html+=`</div>`;
+  });
+
+  html+=`</div></div>`;
+  el.innerHTML=html;
+}
+
+function openHandbook(id){
+  window._hbActive=id;
+  renderHandbook();
+}
+
+
+// ══════════════════════════════════════════════════════════════
+// EXPORT / IMPORT
+// ══════════════════════════════════════════════════════════════
+function exportData(){
+  const data=JSON.parse(localStorage.getItem('srk_training_v3')||'{}');
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  const d=new Date();
+  const stamp=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  a.href=url;a.download=`TrainGo_System_${stamp}.json`;
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function importData(){
+  document.getElementById('importFileInput').click();
+}
+
+function handleImportFile(input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      const data=JSON.parse(e.target.result);
+      if(!data.cohorts){alert('Invalid file. Please use an exported TrainGo System backup.');return;}
+      if(!confirm(`Import data?\n\nThis will REPLACE all current data.\n\nCohorts found: ${data.cohorts?.length||0}\nReports found: ${data.reports?.length||0}\n\nContinue?`))return;
+      localStorage.setItem('srk_training_v3',JSON.stringify(data));
+      loadData();
+      if(S.role)goPage('dashboard');
+      alert('✅ Import successful!');
+    }catch(err){alert('Import failed. File may be corrupted.\n'+err.message);}
+  };
+  reader.readAsText(file);
+  input.value='';
+}
+
+// ══════════════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════════════
+loadData();
+</script>
+</body>
+</html>
