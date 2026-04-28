@@ -218,15 +218,24 @@ const firebaseConfig={
   messagingSenderId:"145998800641",
   appId:"1:145998800641:web:34b6a1ae87aaea08455d00"
 };
-firebase.initializeApp(firebaseConfig);
-const db=firebase.firestore();
+// ── Firebase init (safe — login works even if Firebase fails) ──
+let db=null;
+function initFirebase(){
+  try{
+    firebase.initializeApp(firebaseConfig);
+    db=firebase.firestore();
+    listenAll();
+    console.log('Firebase connected ✅');
+  }catch(e){
+    console.warn('Firebase failed to load — running in offline mode.',e);
+  }
+}
 
-// ── Firebase helpers ──
-async function fbSet(col,id,data){await db.collection(col).doc(id).set(data);}
-async function fbDel(col,id){await db.collection(col).doc(id).delete();}
+async function fbSet(col,id,data){if(db)await db.collection(col).doc(id).set(data);}
+async function fbDel(col,id){if(db)await db.collection(col).doc(id).delete();}
 
-// ── Real-time listeners ──
 function listenAll(){
+  if(!db)return;
   db.collection('cohorts').onSnapshot(snap=>{
     S.cohorts=snap.docs.map(d=>d.data());
     if(S.role)refreshCurrentPage();
@@ -841,7 +850,7 @@ const SUCCESS_CRITERIA={
 // ══════════════════════════════════════════════════════════════
 // STATE & PERSISTENCE
 // ══════════════════════════════════════════════════════════════
-const APP_VERSION='v7';
+const APP_VERSION='v8';
 const S={role:null,cohortId:null,cohorts:[],reports:[],taskChecks:{},passwords:[]};
 
 async function saveAll(){
@@ -2472,7 +2481,7 @@ function handleImportFile(input){
 // INIT
 // ══════════════════════════════════════════════════════════════
 loadData(); // no-op now, kept for compatibility
-listenAll(); // start Firebase real-time sync
+initFirebase(); // start Firebase real-time sync
 </script>
 </body>
 </html>
