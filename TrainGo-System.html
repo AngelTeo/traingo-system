@@ -201,7 +201,56 @@ label.lbl:first-child{margin-top:0;}
   <div class="page" id="page-mgmt"><div id="mgmt-content"></div></div>
 </div>
 
-<script>
+<script type="module">
+// ══════════════════════════════════════════════════════════════
+// FIREBASE SETUP
+// ══════════════════════════════════════════════════════════════
+import{initializeApp}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import{getFirestore,doc,getDoc,getDocs,setDoc,deleteDoc,collection,onSnapshot,writeBatch}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+const firebaseConfig={
+  apiKey:"AIzaSyBISHjXuAxzCd_0TC8mXgHGn0vwdwChd7s",
+  authDomain:"traingo-8ba91.firebaseapp.com",
+  projectId:"traingo-8ba91",
+  storageBucket:"traingo-8ba91.firebasestorage.app",
+  messagingSenderId:"145998800641",
+  appId:"1:145998800641:web:34b6a1ae87aaea08455d00"
+};
+const fbApp=initializeApp(firebaseConfig);
+const db=getFirestore(fbApp);
+
+// ── Firebase helpers ──
+async function fbSet(col,id,data){await setDoc(doc(db,col,id),data);}
+async function fbDel(col,id){await deleteDoc(doc(db,col,id));}
+async function fbGetAll(col){const snap=await getDocs(collection(db,col));return snap.docs.map(d=>d.data());}
+
+// ── Real-time listeners ──
+function listenAll(){
+  onSnapshot(collection(db,'cohorts'),snap=>{
+    S.cohorts=snap.docs.map(d=>d.data());
+    if(S.role)refreshCurrentPage();
+  });
+  onSnapshot(collection(db,'reports'),snap=>{
+    S.reports=snap.docs.map(d=>d.data());
+    if(S.role)refreshCurrentPage();
+  });
+  onSnapshot(collection(db,'task_checks'),snap=>{
+    S.taskChecks={};
+    snap.docs.forEach(d=>{S.taskChecks[d.id]=d.data().checked;});
+    if(S.role)refreshCurrentPage();
+  });
+  onSnapshot(collection(db,'passwords'),snap=>{
+    S.passwords=snap.docs.map(d=>d.data());
+  });
+}
+
+function refreshCurrentPage(){
+  const pages=['dashboard','tasks','report','progress','sop','handbook','mgmt'];
+  for(const p of pages){
+    const el=document.getElementById('page-'+p);
+    if(el&&el.classList.contains('on')){goPage(p);break;}
+  }
+}
 // ══════════════════════════════════════════════════════════════
 // SOP DATA — 13 STEPS
 // ══════════════════════════════════════════════════════════════
@@ -791,16 +840,31 @@ const SUCCESS_CRITERIA={
 // ══════════════════════════════════════════════════════════════
 // STATE & PERSISTENCE
 // ══════════════════════════════════════════════════════════════
-const APP_VERSION='v5';
+const APP_VERSION='v6';
 const S={role:null,cohortId:null,cohorts:[],reports:[],taskChecks:{},passwords:[]};
 
-function saveAll(){
-  localStorage.setItem('srk_training_v3',JSON.stringify({cohorts:S.cohorts,reports:S.reports,taskChecks:S.taskChecks,passwords:S.passwords}));
+async function saveAll(){
+  // Firebase saves — real-time listeners will sync back to all devices
   const f=document.getElementById('savedFlash');f.style.opacity='1';setTimeout(()=>f.style.opacity='0',1400);
 }
+// Granular save functions called per operation
+async function saveCohort(cohort){await fbSet('cohorts',cohort.id,cohort);}
+async function saveReport(rpt){await fbSet('reports',rpt.id,rpt);}
+async function saveTaskCheck(key,val){await fbSet('task_checks',key,{checked:val});}
+async function savePassword(pw){await fbSet('passwords',pw.id,pw);}
+async function deleteReportFb(id){await fbDel('reports',id);}
+async function deleteCohortFb(cohort){
+  await fbDel('cohorts',cohort.id);
+  // Also delete related reports and task checks
+  const batch=writeBatch(db);
+  S.reports.filter(r=>r.cohortId===cohort.id).forEach(r=>batch.delete(doc(db,'reports',r.id)));
+  Object.keys(S.taskChecks).filter(k=>k.startsWith(cohort.id)).forEach(k=>batch.delete(doc(db,'task_checks',k)));
+  await batch.commit();
+}
+async function deletePasswordFb(id){await fbDel('passwords',id);}
 function loadData(){
-  const raw=localStorage.getItem('srk_training_v3');if(!raw)return;
-  try{const p=JSON.parse(raw);if(p.cohorts)S.cohorts=p.cohorts;if(p.reports)S.reports=p.reports;if(p.taskChecks)S.taskChecks=p.taskChecks;if(p.passwords)S.passwords=p.passwords;}catch(e){}
+  // Data loaded via Firebase real-time listeners (listenAll)
+  // localStorage no longer used
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -1333,8 +1397,8 @@ function viewDay(day,cohortId,role){
   renderTasks();cohort.currentDay=savedDay;
 }
 
-function toggleTask(cid,role,day,tid,val){
-  S.taskChecks[checkKey(cid,role,day,tid)]=val;saveAll();
+async function toggleTask(cid,role,day,tid,val){
+  const k=checkKey(cid,role,day,tid);S.taskChecks[k]=val;await saveTaskCheck(k,val);
   const item=document.getElementById('ti_'+tid);
   if(item){if(val)item.classList.add('done');else item.classList.remove('done');}
   // Update counter
@@ -1574,7 +1638,7 @@ function renderPartnerSkillSummary(cohort,myRole,day,stage){
   </div>`;
 }
 
-function submitReport(cid,role,day){
+async function submitReport(cid,role,day){
   const good=document.getElementById('rpt_good')?.value.trim();
   if(!good){alert('Please fill in what went well today.');return;}
   const stage=getStageForDay(day);
@@ -1597,15 +1661,18 @@ function submitReport(cid,role,day){
   }else{
     rpt.questions=document.getElementById('rpt_questions')?.value.trim()||'';
   }
-  S.reports=S.reports.filter(r=>!(r.cohortId===cid&&r.role===role&&r.day===day));
-  S.reports.push(rpt);saveAll();renderReport();
+  // Delete old report for this day if exists
+  const old=S.reports.find(r=>r.cohortId===cid&&r.role===role&&r.day===day);
+  if(old)await deleteReportFb(old.id);
+  await saveReport(rpt);renderReport();
   alert(`✅ Day ${day} report submitted!`);
 }
 
-function deleteReport(cid,role,day){
+async function deleteReport(cid,role,day){
   if(!confirm('Delete and re-enter this report?'))return;
-  S.reports=S.reports.filter(r=>!(r.cohortId===cid&&r.role===role&&r.day===day));
-  saveAll();renderReport();
+  const rpt=S.reports.find(r=>r.cohortId===cid&&r.role===role&&r.day===day);
+  if(rpt)await deleteReportFb(rpt.id);
+  renderReport();
 }
 
 function renderMgmtReportView(el){
@@ -1764,11 +1831,11 @@ function viewRptDay(cohortId,day){
   renderCohortRptDetail(cohort);cohort.currentDay=saved;
 }
 
-function advanceDay(cohortId){
+async function advanceDay(cohortId){
   const cohort=getCohort(cohortId);if(!cohort)return;
   const day=cohort.currentDay||1;const idx=ALL_DAYS.indexOf(day);
-  if(idx<ALL_DAYS.length-1){cohort.currentDay=ALL_DAYS[idx+1];saveAll();alert(`✅ Advanced to Day ${cohort.currentDay}!`);renderCohortRptDetail(cohort);}
-  else{cohort.status='completed';saveAll();alert('🎉 Training complete! Mentee has officially taken on the role!');renderCohortRptDetail(cohort);}
+  if(idx<ALL_DAYS.length-1){cohort.currentDay=ALL_DAYS[idx+1];await saveCohort(cohort);alert(`✅ Advanced to Day ${cohort.currentDay}!`);renderCohortRptDetail(cohort);}
+  else{cohort.status='completed';await saveCohort(cohort);alert('🎉 Training complete! Mentee has officially taken on the role!');renderCohortRptDetail(cohort);}
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -2074,21 +2141,20 @@ function renderPasswordMgmt(){
   </div>`;
 }
 
-function addPw(){
+async function addPw(){
   const pw=document.getElementById('new_pw')?.value.trim();
   const role=document.getElementById('new_pw_role')?.value;
   const label=document.getElementById('new_pw_label')?.value.trim()||'Local Password';
   if(!pw){alert('Please enter a password.');return;}
   const allPw=SYSTEM_PASSWORDS.concat(S.passwords);
   if(allPw.find(p=>p.pass===pw)){alert('This password already exists.');return;}
-  S.passwords.push({id:genId('pw'),pass:pw,role,label,type:'local'});
-  saveAll();renderMgmt();
+  const npw={id:genId('pw'),pass:pw,role,label,type:'local'};
+  await savePassword(npw);renderMgmt();
 }
 
-function deletePw(id){
+async function deletePw(id){
   if(!confirm('Remove this password?'))return;
-  S.passwords=S.passwords.filter(p=>p.id!==id);
-  saveAll();renderMgmt();
+  await deletePasswordFb(id);renderMgmt();
 }
 
 function openNewCohort(){
@@ -2115,16 +2181,17 @@ function openNewCohort(){
   document.body.appendChild(ov);
 }
 
-function createCohort(){
+async function createCohort(){
   const menteeName=document.getElementById('nc_mentee')?.value.trim();
   const mentorName=document.getElementById('nc_mentor')?.value.trim();
   const startDate=document.getElementById('nc_start')?.value;
   if(!menteeName||!mentorName||!startDate){alert('Please fill in all required fields.');return;}
-  S.cohorts.push({id:genId('cohort'),menteeName,mentorName,startDate,
+  const nc={id:genId('cohort'),menteeName,mentorName,startDate,
     ageGroup:document.getElementById('nc_age')?.value||'',
     notes:document.getElementById('nc_notes')?.value.trim()||'',
-    currentDay:1,status:'active',createdAt:getTodayISO()});
-  saveAll();document.querySelector('.overlay')?.remove();renderMgmt();
+    currentDay:1,status:'active',createdAt:getTodayISO()};
+  await saveCohort(nc);
+  document.querySelector('.overlay')?.remove();renderMgmt();
   alert(`✅ Cohort created for ${menteeName}!`);
 }
 
@@ -2160,7 +2227,7 @@ function editCohort(id){
   document.body.appendChild(ov);
 }
 
-function saveCohortEdit(id){
+async function saveCohortEdit(id){
   const c=getCohort(id);if(!c)return;
   c.menteeName=document.getElementById('ec_mentee')?.value.trim()||c.menteeName;
   c.mentorName=document.getElementById('ec_mentor')?.value.trim()||c.mentorName;
@@ -2169,28 +2236,26 @@ function saveCohortEdit(id){
   c.ageGroup=document.getElementById('ec_age')?.value||'';
   c.status=document.getElementById('ec_status')?.value||c.status;
   c.notes=document.getElementById('ec_notes')?.value.trim()||'';
-  saveAll();document.querySelector('.overlay')?.remove();renderMgmt();
+  await saveCohort(c);document.querySelector('.overlay')?.remove();renderMgmt();
 }
 
-function openAdvanceModal(id){
+async function openAdvanceModal(id){
   const c=getCohort(id);if(!c)return;
   const day=c.currentDay||1;const idx=ALL_DAYS.indexOf(day);
   const nextDay=ALL_DAYS[idx+1];
   if(!nextDay){alert('Already on the final day!');return;}
   const mr=getReport(c.id,'mentor',day);const tr=getReport(c.id,'mentee',day);
   if(confirm(`Advance ${c.menteeName} from Day ${day} → Day ${nextDay}?\n\nMentor report: ${mr?'✅ submitted':'⚠️ NOT submitted'}\nNew Teacher report: ${tr?'✅ submitted':'⚠️ NOT submitted'}\n\nContinue?`)){
-    c.currentDay=nextDay;saveAll();renderMgmt();alert(`✅ Advanced to Day ${nextDay}!`);
+    c.currentDay=nextDay;await saveCohort(c);renderMgmt();alert(`✅ Advanced to Day ${nextDay}!`);
   }
 }
 
-function deleteCohort(id){
+async function deleteCohort(id){
   const c=getCohort(id);if(!c)return;
   if(!confirm(`Delete cohort for ${c.menteeName}? All reports will be deleted. Cannot undo.`))return;
-  S.cohorts=S.cohorts.filter(x=>x.id!==id);
-  S.reports=S.reports.filter(r=>r.cohortId!==id);
-  Object.keys(S.taskChecks).forEach(k=>{if(k.startsWith(id))delete S.taskChecks[k];});
   if(S.cohortId===id)S.cohortId=null;
-  saveAll();renderMgmt();
+  await deleteCohortFb(c);
+  renderMgmt();
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -2365,7 +2430,7 @@ function openHandbook(id){
 // EXPORT / IMPORT
 // ══════════════════════════════════════════════════════════════
 function exportData(){
-  const data=JSON.parse(localStorage.getItem('srk_training_v3')||'{}');
+  const data={cohorts:S.cohorts,reports:S.reports,taskChecks:S.taskChecks,passwords:S.passwords};
   const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');
@@ -2383,15 +2448,20 @@ function importData(){
 function handleImportFile(input){
   const file=input.files[0];if(!file)return;
   const reader=new FileReader();
-  reader.onload=function(e){
+  reader.onload=async function(e){
     try{
       const data=JSON.parse(e.target.result);
       if(!data.cohorts){alert('Invalid file. Please use an exported TrainGo System backup.');return;}
       if(!confirm(`Import data?\n\nThis will REPLACE all current data.\n\nCohorts found: ${data.cohorts?.length||0}\nReports found: ${data.reports?.length||0}\n\nContinue?`))return;
-      localStorage.setItem('srk_training_v3',JSON.stringify(data));
-      loadData();
+      // Write imported data to Firebase
+      const batch=writeBatch(db);
+      (data.cohorts||[]).forEach(x=>batch.set(doc(db,'cohorts',x.id),x));
+      (data.reports||[]).forEach(x=>batch.set(doc(db,'reports',x.id),x));
+      Object.entries(data.taskChecks||{}).forEach(([k,v])=>batch.set(doc(db,'task_checks',k),{checked:v}));
+      (data.passwords||[]).forEach(x=>batch.set(doc(db,'passwords',x.id),x));
+      await batch.commit();
       if(S.role)goPage('dashboard');
-      alert('✅ Import successful!');
+      alert('✅ Import successful! Data synced to cloud.');
     }catch(err){alert('Import failed. File may be corrupted.\n'+err.message);}
   };
   reader.readAsText(file);
@@ -2401,7 +2471,8 @@ function handleImportFile(input){
 // ══════════════════════════════════════════════════════════════
 // INIT
 // ══════════════════════════════════════════════════════════════
-loadData();
+loadData(); // no-op now, kept for compatibility
+listenAll(); // start Firebase real-time sync
 </script>
 </body>
 </html>
