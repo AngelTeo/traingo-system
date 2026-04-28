@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- Firebase compat SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <title>TrainGo Training System</title>
 <style>
 :root {
@@ -201,12 +204,11 @@ label.lbl:first-child{margin-top:0;}
   <div class="page" id="page-mgmt"><div id="mgmt-content"></div></div>
 </div>
 
-<script type="module">
+<script>
 // ══════════════════════════════════════════════════════════════
-// FIREBASE SETUP
+// FIREBASE SETUP (compat SDK — global scope, works with onclick)
 // ══════════════════════════════════════════════════════════════
-import{initializeApp}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-import{getFirestore,doc,getDoc,getDocs,setDoc,deleteDoc,collection,onSnapshot,writeBatch}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+// Firebase compat loaded via <head> script tags
 
 const firebaseConfig={
   apiKey:"AIzaSyBISHjXuAxzCd_0TC8mXgHGn0vwdwChd7s",
@@ -216,30 +218,29 @@ const firebaseConfig={
   messagingSenderId:"145998800641",
   appId:"1:145998800641:web:34b6a1ae87aaea08455d00"
 };
-const fbApp=initializeApp(firebaseConfig);
-const db=getFirestore(fbApp);
+firebase.initializeApp(firebaseConfig);
+const db=firebase.firestore();
 
 // ── Firebase helpers ──
-async function fbSet(col,id,data){await setDoc(doc(db,col,id),data);}
-async function fbDel(col,id){await deleteDoc(doc(db,col,id));}
-async function fbGetAll(col){const snap=await getDocs(collection(db,col));return snap.docs.map(d=>d.data());}
+async function fbSet(col,id,data){await db.collection(col).doc(id).set(data);}
+async function fbDel(col,id){await db.collection(col).doc(id).delete();}
 
 // ── Real-time listeners ──
 function listenAll(){
-  onSnapshot(collection(db,'cohorts'),snap=>{
+  db.collection('cohorts').onSnapshot(snap=>{
     S.cohorts=snap.docs.map(d=>d.data());
     if(S.role)refreshCurrentPage();
   });
-  onSnapshot(collection(db,'reports'),snap=>{
+  db.collection('reports').onSnapshot(snap=>{
     S.reports=snap.docs.map(d=>d.data());
     if(S.role)refreshCurrentPage();
   });
-  onSnapshot(collection(db,'task_checks'),snap=>{
+  db.collection('task_checks').onSnapshot(snap=>{
     S.taskChecks={};
     snap.docs.forEach(d=>{S.taskChecks[d.id]=d.data().checked;});
     if(S.role)refreshCurrentPage();
   });
-  onSnapshot(collection(db,'passwords'),snap=>{
+  db.collection('passwords').onSnapshot(snap=>{
     S.passwords=snap.docs.map(d=>d.data());
   });
 }
@@ -840,7 +841,7 @@ const SUCCESS_CRITERIA={
 // ══════════════════════════════════════════════════════════════
 // STATE & PERSISTENCE
 // ══════════════════════════════════════════════════════════════
-const APP_VERSION='v6';
+const APP_VERSION='v7';
 const S={role:null,cohortId:null,cohorts:[],reports:[],taskChecks:{},passwords:[]};
 
 async function saveAll(){
@@ -855,10 +856,9 @@ async function savePassword(pw){await fbSet('passwords',pw.id,pw);}
 async function deleteReportFb(id){await fbDel('reports',id);}
 async function deleteCohortFb(cohort){
   await fbDel('cohorts',cohort.id);
-  // Also delete related reports and task checks
-  const batch=writeBatch(db);
-  S.reports.filter(r=>r.cohortId===cohort.id).forEach(r=>batch.delete(doc(db,'reports',r.id)));
-  Object.keys(S.taskChecks).filter(k=>k.startsWith(cohort.id)).forEach(k=>batch.delete(doc(db,'task_checks',k)));
+  const batch=db.batch();
+  S.reports.filter(r=>r.cohortId===cohort.id).forEach(r=>batch.delete(db.collection('reports').doc(r.id)));
+  Object.keys(S.taskChecks).filter(k=>k.startsWith(cohort.id)).forEach(k=>batch.delete(db.collection('task_checks').doc(k)));
   await batch.commit();
 }
 async function deletePasswordFb(id){await fbDel('passwords',id);}
@@ -2454,11 +2454,11 @@ function handleImportFile(input){
       if(!data.cohorts){alert('Invalid file. Please use an exported TrainGo System backup.');return;}
       if(!confirm(`Import data?\n\nThis will REPLACE all current data.\n\nCohorts found: ${data.cohorts?.length||0}\nReports found: ${data.reports?.length||0}\n\nContinue?`))return;
       // Write imported data to Firebase
-      const batch=writeBatch(db);
-      (data.cohorts||[]).forEach(x=>batch.set(doc(db,'cohorts',x.id),x));
-      (data.reports||[]).forEach(x=>batch.set(doc(db,'reports',x.id),x));
-      Object.entries(data.taskChecks||{}).forEach(([k,v])=>batch.set(doc(db,'task_checks',k),{checked:v}));
-      (data.passwords||[]).forEach(x=>batch.set(doc(db,'passwords',x.id),x));
+      const batch=db.batch();
+      (data.cohorts||[]).forEach(x=>batch.set(db.collection('cohorts').doc(x.id),x));
+      (data.reports||[]).forEach(x=>batch.set(db.collection('reports').doc(x.id),x));
+      Object.entries(data.taskChecks||{}).forEach(([k,v])=>batch.set(db.collection('task_checks').doc(k),{checked:v}));
+      (data.passwords||[]).forEach(x=>batch.set(db.collection('passwords').doc(x.id),x));
       await batch.commit();
       if(S.role)goPage('dashboard');
       alert('✅ Import successful! Data synced to cloud.');
