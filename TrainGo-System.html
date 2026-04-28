@@ -850,7 +850,7 @@ const SUCCESS_CRITERIA={
 // ══════════════════════════════════════════════════════════════
 // STATE & PERSISTENCE
 // ══════════════════════════════════════════════════════════════
-const APP_VERSION='v8';
+const APP_VERSION='v9';
 const S={role:null,cohortId:null,cohorts:[],reports:[],taskChecks:{},passwords:[]};
 
 async function saveAll(){
@@ -955,7 +955,7 @@ function goPage(p){
 // HELPERS
 // ══════════════════════════════════════════════════════════════
 function getCohort(id){return S.cohorts.find(c=>c.id===(id||S.cohortId));}
-function getTodayISO(){return new Date().toISOString().slice(0,10);}
+function getTodayISO(){const d=new Date();return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
 function fmtDate(ds){if(!ds)return'—';return new Date(ds+'T12:00:00').toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});}
 function genId(p){return p+'_'+Date.now()+'_'+Math.random().toString(36).slice(2,5);}
 function getReport(cid,role,day){return S.reports.find(r=>r.cohortId===cid&&r.role===role&&r.day===day);}
